@@ -1,13 +1,12 @@
-import React from "react";
-import ReactDom from "react-dom";
-import Slider from "./Slider";
+import React from 'react';
+import ReactDom from 'react-dom';
+import SliderComponent from './SliderComponent';
 
 class Carousel extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      id: 20,
-      images: [{ key: "1.jpg" }],
+      id: 3,
       isLoaded: null
     };
   }
@@ -19,17 +18,10 @@ class Carousel extends React.Component {
       .then((this.state.isLoaded = true));
   }
   render() {
-    console.log(document.location.href, "LOCATION");
-    // console.log(this.state.isLoaded, "LOADED");
-    // console.log(this.state.images, "IMAGES");
+    // console.log(document.location.href, 'LOCATION');
     return (
-      <div>
-        <Slider images={this.state.images} />
-        {/* <img
-          src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${this.state.id}/${
-            this.state.images[0]
-          }`}
-        /> */}
+      <div id="sliderContainer">
+        {this.state.isLoaded && <SliderComponent images={this.state.images} id={this.state.id} />}
       </div>
     );
   }

@@ -1,41 +1,47 @@
-// /// <reference types="aws-sdk" />
-// const S3 = require('aws-sdk/clients/s3');
-const mongodb = require("mongodb");
-const client = mongodb.MongoClient;
-const assert = require("assert");
-const url = "mongodb://localhost:27017";
-const express = require("express");
+/* eslint-disable no-console */
+const mongodb = require('mongodb');
+const assert = require('assert');
+const express = require('express');
+const bodyParser = require('body-parser');
+
 const app = express();
-const bodyParser = require("body-parser");
+const url = 'mongodb://localhost:27017';
+const client = mongodb.MongoClient;
 const port = process.env.PORT || 3005;
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-app.use("/", express.static("client/public"));
-app.listen(port, () =>
-  console.log(`Server connected and listening on ${port}!`)
-);
-// console.log(db);
+app.use('/', express.static('client/public'));
+app.listen(port, () => console.log(`Server connected and listening on ${port}!`));
 
-app.get("/:id", function(req, res) {
-  var cars = [];
+app.get('/:id', (req, res) => {
+  const cars = [];
   client.connect(
     url,
-    function(err, client) {
-      var db = client.db("TuRash");
-      var collection = db.collection("testData");
-      console.log(req.params.id);
-      var query = { id: Number(req.params.id) };
+    // eslint-disable-next-line no-shadow
+    (err, client) => {
+      const db = client.db('TuRash');
+      const collection = db.collection('testData');
+      const query = {
+        id: Number(req.params.id)
+      };
 
-      var cursor = collection
-        .find({ id: Number(req.params.id) })
-        .project({ Key: 1, _id: 0, id: 1 });
+      const cursor = collection
+        .find({
+          id: Number(req.params.id)
+        })
+        .project({
+          Key: 1,
+          _id: 0,
+          id: 1
+        });
 
       cursor.forEach(
-        function(doc, err) {
+        // eslint-disable-next-line no-shadow
+        (doc, err) => {
           assert.equal(null, err);
           cars.push(doc);
         },
-        function(err) {
+        err => {
           client.close();
           res.json(cars);
         }
