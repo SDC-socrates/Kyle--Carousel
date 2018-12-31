@@ -17,14 +17,12 @@ app.get('/:id', (req, res) => {
   const cars = [];
   client.connect(
     url,
-    // eslint-disable-next-line no-shadow
     (err, client) => {
       const db = client.db('TuRash');
       const collection = db.collection('testData');
       const query = {
         id: Number(req.params.id)
       };
-
       const cursor = collection
         .find({
           id: Number(req.params.id)
@@ -32,11 +30,10 @@ app.get('/:id', (req, res) => {
         .project({
           Key: 1,
           _id: 0,
+          make: 1,
           id: 1
         });
-
       cursor.forEach(
-        // eslint-disable-next-line no-shadow
         (doc, err) => {
           assert.equal(null, err);
           cars.push(doc);
@@ -44,6 +41,34 @@ app.get('/:id', (req, res) => {
         err => {
           client.close();
           res.json(cars);
+        }
+      );
+    }
+  );
+});
+
+app.post(`/similar`, (req, res) => {
+  const make = [];
+  console.log('MAKE', req.body);
+  client.connect(
+    url,
+    (err, client) => {
+      const db = client.db('TuRash');
+      const collection = db.collection('testData');
+      const query = {
+        make: req.body.make
+      };
+      const cursor = collection
+        .find({ make: req.body.make })
+        .project({ Key: 1, _id: 0, make: 1, id: 1 });
+      cursor.forEach(
+        (doc, err) => {
+          assert.equal(null, err);
+          make.push(doc);
+        },
+        err => {
+          client.close();
+          res.json(make);
         }
       );
     }
