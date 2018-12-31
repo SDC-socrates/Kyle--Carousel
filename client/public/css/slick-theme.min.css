@@ -67,7 +67,7 @@
   -moz-osx-font-smoothing: grayscale;
 }
 .slick-list {
-  max-height: 700px;
+  max-height: 1/2vw;
   width: 100%;
 }
 .slick-loading .slick-list {
@@ -276,6 +276,7 @@
 }
 
 #similar .slick-list {
+  margin-top: -4px;
   background-color: #231f20;
   height: 250px;
   padding-top: 2.5%;

@@ -11,7 +11,30 @@ class SliderComponent extends React.Component {
     };
     this.filterSimilarResults = this.filterSimilarResults.bind(this);
   }
-
+  componentDidUpdate(prevProps, prevState) {
+    // Typical usage (don't forget to compare props):
+    if (this.props.id !== this.state.id && this.state.images[0].Key !== this.props.images[0].Key) {
+      fetch(`/similar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ make: this.props.make })
+      })
+        .then(res => res.json())
+        .then(res => res)
+        .then(res =>
+          this.setState({
+            id: this.props.id,
+            images: this.props.images,
+            similar: this.filterSimilarResults(res, this.props.id)
+          })
+        );
+      console.log('OLD slider', this.state);
+      console.log('NEW slider', this.props);
+    }
+    this.state.updated = true;
+  }
   componentDidMount() {
     fetch(`/similar`, {
       method: 'POST',
@@ -78,10 +101,9 @@ class SliderComponent extends React.Component {
       swipeToSlide: true,
       focusOnSelect: true
     };
-
     return (
       <div>
-        <div class="slider slider-single">
+        <div className="slider slider-single">
           <Slider {...settings}>
             {this.state.images !== undefined
               ? this.state.images.map((image, i) => (
@@ -96,11 +118,11 @@ class SliderComponent extends React.Component {
               : null}
           </Slider>
         </div>
-        <div class="slider slider-nav" id="similar">
+        <div className="slider slider-nav" id="similar">
           <Slider {...similarSliderSettings}>
             {this.state.similar &&
               this.state.similar.map((similarCar, i) => (
-                <div class="similarSlide" key={i}>
+                <div className="similarSlide" key={i}>
                   <a onClick={() => this.props.similar(similarCar.id)}>
                     <img
                       src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${similarCar.id}/${

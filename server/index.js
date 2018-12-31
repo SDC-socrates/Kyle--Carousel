@@ -8,6 +8,7 @@ const app = express();
 const url = 'mongodb://localhost:27017';
 const client = mongodb.MongoClient;
 const port = process.env.PORT || 3005;
+
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 app.use('/', express.static('client/public'));
@@ -58,9 +59,7 @@ app.post(`/similar`, (req, res) => {
       const query = {
         make: req.body.make
       };
-      const cursor = collection
-        .find({ make: req.body.make })
-        .project({ Key: 1, _id: 0, make: 1, id: 1 });
+      const cursor = collection.find(query).project({ Key: 1, _id: 0, make: 1, id: 1 });
       cursor.forEach(
         (doc, err) => {
           assert.equal(null, err);

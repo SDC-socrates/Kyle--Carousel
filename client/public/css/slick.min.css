@@ -55,13 +55,13 @@
   clear: both;
 }
 .slick-slide div {
-  height: 100%;
+  height: 1/2vw;
   width: 100%;
 }
 .slick-slide {
   display: none;
   float: left;
-  height: 100%;
+  height: 1/2vw;
   min-height: 1px;
   background-color: white;
   overflow: hidden;
@@ -70,13 +70,12 @@
   float: right;
 }
 .slick-slide img {
-  margin-top: -10%;
+  height: 1/2vw;
   width: 100%;
   display: block;
-  object-fit: fill;
 }
 .slick-slide.slick-loading img {
-  object-fit: fill;
+  object-fit: cover;
   display: none;
 }
 .slick-slide.dragging img {

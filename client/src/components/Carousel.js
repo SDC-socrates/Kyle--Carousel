@@ -10,21 +10,25 @@ class Carousel extends React.Component {
     };
     this.handleSimilarCarSelect = this.handleSimilarCarSelect.bind(this);
   }
-
+  componentDidUpdate(prevProps, prevState) {
+    // Typical usage (don't forget to compare props):
+    if (this.state.id !== prevState.id) {
+      fetch(`/${this.state.id}`)
+        .then(res => res.json())
+        .then(res => this.setState({ id: this.state.id, images: res, make: res[0].make }));
+    }
+  }
   componentDidMount() {
     fetch(`/${this.state.id}`)
       .then(res => res.json())
       .then(res => this.setState({ images: res, make: res[0].make }));
   }
   handleSimilarCarSelect(id) {
-    console.log('WORKING', id);
     this.setState({
       id: id
     });
-    this.forceUpdate();
   }
   render() {
-    console.log(this.state.id, 'CURRENT ID');
     return (
       <div>
         {this.state.images && (
