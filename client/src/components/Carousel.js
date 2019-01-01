@@ -1,5 +1,5 @@
 import React from 'react';
-import ReactDom from 'react-dom';
+import NavBar from './NavBar';
 import SliderComponent from './SliderComponent';
 
 class Carousel extends React.Component {
@@ -30,6 +30,7 @@ class Carousel extends React.Component {
   render() {
     return (
       <div>
+        <NavBar />
         {this.state.images && (
           <SliderComponent
             images={this.state.images}

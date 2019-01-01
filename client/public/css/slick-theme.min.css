@@ -342,11 +342,12 @@
   border-top-left-radius: 2em;
   border-top-right-radius: 2em;
   text-align: center;
+  display: flex;
   position: absolute;
   z-index: 4;
   width: 500px;
   margin-left: 4.25em;
-  margin-top: -3.25em;
+  margin-top: -3.2em;
   padding-top: 1%;
   background-color: #231f20;
   color: white;
