@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from './Image';
 import Slider from 'react-slick';
 
 class SliderComponent extends React.Component {
@@ -7,12 +6,13 @@ class SliderComponent extends React.Component {
     super(props);
     this.state = {
       id: this.props.id,
-      images: this.props.images
+      images: this.props.images,
+      activeSlide: 0,
+      activeSlide2: 0
     };
     this.filterSimilarResults = this.filterSimilarResults.bind(this);
   }
-  componentDidUpdate(prevProps, prevState) {
-    // Typical usage (don't forget to compare props):
+  componentDidUpdate() {
     if (this.props.id !== this.state.id && this.state.images[0].Key !== this.props.images[0].Key) {
       fetch(`/similar`, {
         method: 'POST',
@@ -22,7 +22,6 @@ class SliderComponent extends React.Component {
         body: JSON.stringify({ make: this.props.make })
       })
         .then(res => res.json())
-        .then(res => res)
         .then(res =>
           this.setState({
             id: this.props.id,
@@ -30,10 +29,8 @@ class SliderComponent extends React.Component {
             similar: this.filterSimilarResults(res, this.props.id)
           })
         );
-      console.log('OLD slider', this.state);
-      console.log('NEW slider', this.props);
+      console.log(this.state.similar);
     }
-    this.state.updated = true;
   }
   componentDidMount() {
     fetch(`/similar`, {
@@ -47,17 +44,19 @@ class SliderComponent extends React.Component {
       .then(res => res)
       .then(res => this.setState({ similar: this.filterSimilarResults(res, this.state.id) }));
   }
-
+  //get similar cars for second  carousel
   filterSimilarResults(similar, currentId) {
     let usedIds = [];
     let resultLimit = 7;
     let filteredResults = [];
+    //get an id for every matched collection
     similar.forEach(result => {
       if (usedIds.indexOf(result.id) === -1) {
         usedIds.push(result.id);
         filteredResults.push(result);
       }
     });
+    //select an image from a random matched collection and limit the results
     let randomSelection = function(limit, results) {
       let duplicateIds = [];
       let counter = limit;
@@ -103,11 +102,11 @@ class SliderComponent extends React.Component {
     };
     return (
       <div>
-        <div className="slider slider-single">
+        <div>
           <Slider {...settings}>
             {this.state.images !== undefined
               ? this.state.images.map((image, i) => (
-                  <div key={i} className="slideContainer">
+                  <div key={i}>
                     <img
                       src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${this.state.id}/${
                         image.Key
@@ -118,11 +117,19 @@ class SliderComponent extends React.Component {
               : null}
           </Slider>
         </div>
+        <div className="similarTitle">
+          <h1>You may also like...</h1>
+        </div>
         <div className="slider slider-nav" id="similar">
           <Slider {...similarSliderSettings}>
             {this.state.similar &&
               this.state.similar.map((similarCar, i) => (
                 <div className="similarSlide" key={i}>
+                  <span className="carDescription">
+                    <div>
+                      <h2>{similarCar.make.charAt(0).toUpperCase() + similarCar.make.substr(1)}</h2>
+                    </div>
+                  </span>
                   <a onClick={() => this.props.similar(similarCar.id)}>
                     <img
                       src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${similarCar.id}/${

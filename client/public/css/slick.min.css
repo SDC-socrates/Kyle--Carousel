@@ -55,21 +55,24 @@
   clear: both;
 }
 .slick-slide div {
+  background-color: #231f20;
   height: 1/2vw;
   width: 100%;
 }
 .slick-slide {
+  background-color: #231f20;
   display: none;
   float: left;
   height: 1/2vw;
   min-height: 1px;
-  background-color: white;
+  background-color: #231f20e0;
   overflow: hidden;
 }
 [dir='rtl'] .slick-slide {
   float: right;
 }
 .slick-slide img {
+  background-color: #231f20;
   height: 1/2vw;
   width: 100%;
   display: block;
@@ -94,5 +97,6 @@
 } /*# sourceMappingURL=slick.min.css.map */
 /* SIMILAR SLIDER */
 #similar .slick-slide {
+  background-color: #231f20;
   width: 100%;
 }

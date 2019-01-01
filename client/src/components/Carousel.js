@@ -10,8 +10,7 @@ class Carousel extends React.Component {
     };
     this.handleSimilarCarSelect = this.handleSimilarCarSelect.bind(this);
   }
-  componentDidUpdate(prevProps, prevState) {
-    // Typical usage (don't forget to compare props):
+  componentDidUpdate(prevState) {
     if (this.state.id !== prevState.id) {
       fetch(`/${this.state.id}`)
         .then(res => res.json())
