@@ -4,7 +4,8 @@
   "description": "FEC Carousel",
   "scripts": {
     "start": "nodemon server/index.js",
-    "web": "webpack -d --watch"
+    "web": "webpack -d --watch",
+    "seed": "seed"
   },
   "repository": {
     "type": "git",
@@ -22,7 +23,16 @@
     "babel-loader": "^6.3.2",
     "babel-preset-es2015": "^6.22.0",
     "babel-preset-react": "^6.23.0",
+    "eslint": "^5.11.1",
+    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-prettier": "^3.3.0",
+    "eslint-plugin-import": "^2.14.0",
+    "eslint-plugin-jsx-a11y": "^6.1.2",
+    "eslint-plugin-prettier": "^3.0.1",
+    "eslint-plugin-react": "^7.12.0",
     "imports-loader": "^0.8.0",
+    "mongodb-core": "^3.1.9",
+    "node-mongo-seeds": "^3.1.0",
     "nodemon": "^1.18.9",
     "webpack": "^2.2.1"
   },
@@ -31,8 +41,11 @@
     "body-parser": "^1.17.0",
     "express": "^4.15.0",
     "jquery": "^3.3.1",
+    "mongodb": "^3.1.10",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
-    "request": "^2.81.0"
+    "react-slick": "^0.23.2",
+    "request": "^2.81.0",
+    "slick-carousel": "^1.8.1"
   }
 }

@@ -1,25 +1,44 @@
-import React from "react";
-import ReactDom from "react-dom";
+import React from 'react';
+import NavBar from './NavBar';
+import SliderComponent from './SliderComponent';
 
 class Carousel extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      id: 1,
-      img: 1,
-      isLoaded: null
+      id: this.props.id
     };
+    this.handleSimilarCarSelect = this.handleSimilarCarSelect.bind(this);
   }
-
-  componentDidMount() {}
+  componentDidUpdate(prevState) {
+    if (this.state.id !== prevState.id) {
+      fetch(`/${this.state.id}`)
+        .then(res => res.json())
+        .then(res => this.setState({ id: this.state.id, images: res, make: res[0].make }));
+    }
+  }
+  componentDidMount() {
+    fetch(`/${this.state.id}`)
+      .then(res => res.json())
+      .then(res => this.setState({ images: res, make: res[0].make }));
+  }
+  handleSimilarCarSelect(id) {
+    this.setState({
+      id: id
+    });
+  }
   render() {
     return (
       <div>
-        <img
-          src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/TuRashy/${
-            this.state.id
-          }/${this.state.img}.JPG`}
-        />
+        <NavBar />
+        {this.state.images && (
+          <SliderComponent
+            images={this.state.images}
+            id={this.state.id}
+            make={this.state.make}
+            similar={this.handleSimilarCarSelect}
+          />
+        )}
       </div>
     );
   }
