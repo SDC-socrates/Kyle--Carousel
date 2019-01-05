@@ -278,8 +278,8 @@
 #similar .slick-list {
   background-color: #231f20;
   height: 250px;
-  padding-top: 2.5%;
-  padding-bottom: 2.5%;
+  padding-top: 1.5%;
+  padding-bottom: 1%;
 }
 
 #similar .slick-slide {
@@ -336,19 +336,20 @@
   padding-top: 9px;
 }
 .similarTitle h1 {
-  margin: 0 auto;
+  background-color: #231f20;
+  margin-left: 3%;
 }
 .similarTitle {
-  border-top-left-radius: 2em;
-  border-top-right-radius: 2em;
-  text-align: center;
+  text-align: left;
+  height: 15%;
   display: flex;
-  position: absolute;
-  z-index: 4;
-  width: 500px;
-  margin-left: 4.25em;
-  margin-top: -3.2em;
+  z-index: 0;
+  width: 100%;
+
   padding-top: 1%;
   background-color: #231f20;
   color: white;
+}
+.slider-nav {
+  z-index: 3;
 }
