@@ -8,77 +8,33 @@ class SliderComponent extends React.Component {
       id: this.props.id,
       images: this.props.images,
       activeSlide: 0,
-      activeSlide2: 0
+      activeSlide2: 0,
+      random: this.props.random
     };
-    this.filterSimilarResults = this.filterSimilarResults.bind(this);
+    this.getSimilarCarsByMake = this.getSimilarCarsByMake.bind(this);
   }
-  componentDidUpdate() {
-    if (this.props.id !== this.state.id && this.state.images[0].Key !== this.props.images[0].Key) {
-      fetch(`/similar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ make: this.props.make })
-      })
-        .then(res => res.json())
-        .then(res =>
-          this.setState({
-            id: this.props.id,
-            images: this.props.images,
-            similar: this.filterSimilarResults(res, this.props.id)
-          })
-        );
-      console.log(this.state.similar);
-    }
-  }
+
   componentDidMount() {
-    fetch(`/similar`, {
+    console.log(this.props.make);
+    this.getSimilarCarsByMake(this.props.make, 7);
+  }
+
+  //get similar cars for second  carousel
+  getSimilarCarsByMake(type, limit) {
+    return fetch(`http://localhost:3003/api/turash/images/similar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ make: this.props.make })
+      body: JSON.stringify({ make: type, limit: limit })
     })
+      .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => res.json())
-      .then(res => res)
-      .then(res => this.setState({ similar: this.filterSimilarResults(res, this.state.id) }));
+      .then(res => this.setState({ similar: res }));
   }
-  //get similar cars for second  carousel
-  filterSimilarResults(similar, currentId) {
-    let usedIds = [];
-    let resultLimit = 7;
-    let filteredResults = [];
-    //get an id for every matched collection
-    similar.forEach(result => {
-      if (usedIds.indexOf(result.id) === -1) {
-        usedIds.push(result.id);
-        filteredResults.push(result);
-      }
-    });
-    //select an image from a random matched collection and limit the results
-    let randomSelection = function(limit, results) {
-      let duplicateIds = [];
-      let counter = limit;
-      let random = [];
-      while (counter >= 0) {
-        let randomIndex = Math.floor(Math.random() * results.length);
-        if (
-          duplicateIds.indexOf(results[randomIndex].id) === -1 &&
-          results[randomIndex].Key !== '' &&
-          results[randomIndex].id !== currentId
-        ) {
-          duplicateIds.push(results[randomIndex].id);
-          random.push(results[randomIndex]);
-        }
-        counter--;
-      }
 
-      return random;
-    };
-    return randomSelection(resultLimit, filteredResults);
-  }
   render() {
+    console.log('SIMILAR', this.state.similar);
     const settings = {
       dots: false,
       infinite: true,
@@ -86,34 +42,33 @@ class SliderComponent extends React.Component {
       slidesToShow: 1,
       initialSlide: 0,
       adaptiveHeight: false,
-      slidesToScroll: 1,
-      beforeChange: (current, next) => this.setState({ activeSlide: next }),
-      afterChange: current => this.setState({ activeSlide2: current })
+      slidesToScroll: 1
+      // beforeChange: (current, next) => this.setState({ activeSlide: next }),
+      // afterChange: current => this.setState({ activeSlide2: current })
     };
     const similarSliderSettings = {
-      slidesToShow: 3,
       infinite: true,
-      adaptiveHeight: false,
+      adaptiveHeight: true,
       speed: 500,
-      slidesToScroll: 1,
+      slidesToScroll: 3,
       slidesToShow: 3,
       swipeToSlide: true,
       focusOnSelect: true
     };
     return (
       <div>
-        <div>
+        <div id="mainSliderContainer">
           <Slider {...settings}>
-            {this.state.images !== undefined
-              ? this.state.images.map((image, i) => (
-                  <div key={i}>
-                    <img
-                      src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${this.state.id}/${
-                        image.Key
-                      }`}
-                    />
-                  </div>
-                ))
+            {this.state.images
+              ? this.state.images.map(
+                  (image, i) =>
+                    image.url && (
+                      <div key={i}>
+                        {' '}
+                        <img src={image.url} />{' '}
+                      </div>
+                    )
+                )
               : null}
           </Slider>
         </div>
@@ -125,17 +80,37 @@ class SliderComponent extends React.Component {
             {this.state.similar &&
               this.state.similar.map((similarCar, i) => (
                 <div className="similarSlide" key={i}>
-                  <span className="carDescription">
-                    <div>
-                      <h2>{similarCar.make.charAt(0).toUpperCase() + similarCar.make.substr(1)}</h2>
-                    </div>
-                  </span>
-                  <a onClick={() => this.props.similar(similarCar.id)}>
-                    <img
-                      src={`https://s3-us-west-2.amazonaws.com/fec-hrr35/${similarCar.id}/${
-                        similarCar.Key
-                      }`}
-                    />
+                  {console.log(similarCar)}
+                  <a
+                    href={`${window.location.pathname.split('/')[0]}/${
+                      similarCar.thumb.split('/')[4]
+                    }/`}
+                  >
+                    <img src={similarCar.thumb} />
+                    <span className="carDescription">
+                      <div>
+                        <h2>
+                          {similarCar.make.charAt(0).toUpperCase() + similarCar.make.substr(1)}
+                        </h2>
+                      </div>
+                    </span>
+                  </a>
+                </div>
+              ))}
+            {this.state.random &&
+              this.state.random.map((randomCar, i) => (
+                <div className="similarSlide" key={i}>
+                  <a
+                    href={`${window.location.pathname.split('/')[0]}/${
+                      randomCar[1].split('/')[4]
+                    }/`}
+                  >
+                    <img src={randomCar[1]} />
+                    <span className="carDescription">
+                      <div>
+                        <h2>{randomCar[0].charAt(0).toUpperCase() + randomCar[0].substr(1)}</h2>
+                      </div>
+                    </span>
                   </a>
                 </div>
               ))}
