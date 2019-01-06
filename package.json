@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "FEC Carousel",
   "scripts": {
-    "start": "nodemon server/index.js",
+    "start": "node server/index.js",
     "web": "webpack -d --watch",
     "seed": "seed",
     "test": "jest"
