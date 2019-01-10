@@ -19,6 +19,9 @@ const Category = sequelize.define('category', {
   name: {
     type: Sequelize.STRING,
   },
+}, {
+  createdAt: false,
+  updatedAt: false,
 });
 
 var categoriesToDB = [];
