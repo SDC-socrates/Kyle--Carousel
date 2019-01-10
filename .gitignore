@@ -2,3 +2,9 @@ node_modules
 .prettierrc
 .eslintrc.json
 .env
+./imageSeeder/node_modules
+./imageSeeder/testUpload
+./imageSeeder/upload
+./imageSeeder/node_modules/*
+./imageSeeder/testUpload/*
+./imageSeeder/upload/*
