@@ -5,8 +5,8 @@
   "scripts": {
     "start": "node server/index.js",
     "web": "webpack -d --watch",
-    "seed": "seed",
-    "test": "jest"
+    "fdc-seed": "seed",
+    "fdc-test": "jest",
   },
   "repository": {
     "type": "git",
@@ -45,10 +45,13 @@
     "express": "^4.15.0",
     "jquery": "^3.3.1",
     "mongodb": "^3.1.10",
+    "pg": "^7.7.1",
+    "pg-hstore": "^2.3.2",
     "react": "^15.4.2",
     "react-dom": "^15.4.2",
     "react-slick": "^0.23.2",
     "request": "^2.81.0",
+    "sequelize": "^4.42.0",
     "slick-carousel": "^1.8.1"
   }
 }
