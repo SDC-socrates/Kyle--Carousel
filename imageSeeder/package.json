@@ -1,0 +1,17 @@
+{
+  "name": "downloadimages",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "download": "node download.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.384.0",
+    "google-image-downloader": "0.0.8",
+    "tslib": "^1.9.3",
+    "xmlhttprequest": "^1.8.0"
+  }
+}
