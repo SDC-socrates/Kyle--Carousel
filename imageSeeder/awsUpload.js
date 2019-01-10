@@ -2,20 +2,16 @@ var AWS = require('aws-sdk');
 var fs = require('fs');
 const fsPromises = fs.promises;
 
-// PRIVATE - DELETE AND HIDE CREDENTIALS
-var bucketName = 'INSERT_S3_BUCKET_NAME';
-
 // Initialize the Amazon Cognito credentials provider
 AWS.config.region = 'INSERT_AWS_IAM_REGION'; 
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
     IdentityPoolId: 'INSERT_AWS_IAM_IDENTITY_POOL_ID',
 });
-
 AWS.config.update({
   accessKeyId: 'INSERT_AWS_IAM_USER_ACCESS_KEY_ID',
   secretAccessKey: 'INSERT_AWS_IAM_USER_SECRET_ACCESS_KEY'  
 })
-
+var bucketName = 'INSERT_S3_BUCKET_NAME';
 var s3 = new AWS.S3({
   apiVersion: '2006-03-01',
   params: {
@@ -23,13 +19,14 @@ var s3 = new AWS.S3({
   },
 });
 
-
 var fileCount = 0;
 var uploadCount = 0;
 
 var promises = [];
 
+// Set rootDir to the directory where download.js downloaded images
 var rootDir = 'upload';
+// Iterate through rootDir/category/make/model/output/images directory structure
 fsPromises.readdir(`./${rootDir}`)
   .then(categories => {
     categories.forEach(category => {
@@ -42,7 +39,9 @@ fsPromises.readdir(`./${rootDir}`)
                   fsPromises.readdir(`./${rootDir}/${category}/${make}/${model}/output/images`)
                     .then(images => {
                       images.forEach((image, imageNumber) => {
+                        // Determine the file extension
                         var fileExt = image.split('.').pop();
+                        // Only upload the first two images
                         if (imageNumber <2) {
                           fileCount++;
                           fsPromises.readFile(`./${rootDir}/${category}/${make}/${model}/output/images/${image}`)
@@ -66,6 +65,7 @@ fsPromises.readdir(`./${rootDir}`)
                               }));
                             })
                             .then(() => {
+                              // On reaching last file, print a summary success message
                               if (promises.length === fileCount) {
                                 Promise.all(promises).then(values => {
                                   console.log(`${values.length} files uploaded successfully.`);

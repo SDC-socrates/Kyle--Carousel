@@ -1,20 +1,10 @@
 var scraper = require('google-image-downloader/dist/ImageDownloader');
 var fs = require('fs');
 
-// Directory structure
-  // carCategory
-    // make
-      // model and color
-
-// In my DB data gen script:
-
-// upload to S3 with the following stucture
-  // carCategory
-    // make
-      // incrementing number
-
+// Define color variants to search
 var colors = ['Silver', 'Red', 'Blue'];
 
+// Define car categories and models to search
 var models = {
   suv: [
     'Acura MDX',
@@ -255,6 +245,7 @@ for (var category in models) {
           }
           var downloader = new scraper.ImageDownloader(path);
           console.log(search, path);
+          // Set the number of images to download for each model/color variant
           downloader.downloadImages(search, 4);
         }, timer);
       }(category, make, model));
