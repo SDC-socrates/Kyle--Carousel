@@ -15,13 +15,13 @@ class SliderComponent extends React.Component {
   }
 
   componentDidMount() {
-    console.log(this.props.make);
+    // console.log(this.props.make);
     this.getSimilarCarsByMake(this.props.make, 7);
   }
 
   //get similar cars for second  carousel
   getSimilarCarsByMake(type, limit) {
-    return fetch(`http://localhost:3003/api/turash/images/similar`, {
+    return fetch(`http://localhost:3004/api/turash/images/similar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -29,12 +29,17 @@ class SliderComponent extends React.Component {
       body: JSON.stringify({ make: type, limit: limit })
     })
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
-      .then(res => res.json())
+      .then(res => {
+        console.log('/api/turash/images/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
+        var body = res.json();
+        console.log('/api/turash/images/similar POST RES', body);
+        return body;
+      })
       .then(res => this.setState({ similar: res }));
   }
 
   render() {
-    console.log('SIMILAR', this.state.similar);
+    // console.log('SIMILAR', this.state.similar);
     const settings = {
       dots: false,
       infinite: true,
@@ -80,7 +85,6 @@ class SliderComponent extends React.Component {
             {this.state.similar &&
               this.state.similar.map((similarCar, i) => (
                 <div className="similarSlide" key={i}>
-                  {console.log(similarCar)}
                   <a
                     href={`${window.location.pathname.split('/')[0]}/${
                       similarCar.thumb.split('/')[4]
