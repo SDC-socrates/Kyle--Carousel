@@ -17,9 +17,11 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carLoadInterval = 500;
-const carsPhotoLoadInterval = 500;
+const carLoadInterval = 0;
+const carsPhotoLoadInterval = 0;
 const photoRootUrl = 'https://turash-assets.s3.us-west-2.amazonaws.com/';
+const carsPerModel = 5;
+const photosPerCar = 2;
 
 // ========================================================
 // PROMISES TO HELP SEQUENCE ASYNC OPERATIONS
@@ -37,7 +39,10 @@ const carLoadFinished = [];
 const carLoadStarted = new Promise((resolve, reject) => {
   carLoadFinished.push({ resolve, reject });
 });
-
+const carsPhotosLoadFinished = [];
+const carsPhotosLoadStarted = new Promise((resolve, reject) => {
+  carsPhotosLoadFinished.push({ resolve, reject });
+});
 
 // ========================================================
 // HELPER FUNCTIONS
@@ -104,32 +109,34 @@ const attrFromImgKey = (string) => {
   }
 };
 
-// Creates 17550 random cars per model, loads it the DB and returns the Sequelize Promise
-let carCount = 0;
+// Creates 'carsPerModel' random cars per model, loads it the DB and returns the Sequelize Promise
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
-  for (let i = 0; i < 1; i++) {
+  for (let i = 1; i <= carsPerModel; i++) {
     carsToDB.push({
+      id: (( modelId -1 ) * carsPerModel + i),
       status: randomStatus(),
       lat: randomLat(),
       long: randomLong(),
       modelId,
     });
-    carCount++;
   }
   return Car.bulkCreate(carsToDB);
 };
 
 
-let carPhotosCount = 0;
-const attachPhotosToCars = (carIds, photoId) => {
+const attachPhotosToCars = (modelId, photoId) => {
   const carPhotosToDB = [];
-  carIds.forEach((carId) => {
+  const carIdStart = (modelId - 1) * carsPerModel + 1;
+  const carIdEnd = modelId * carsPerModel;
+  // console.log('NEW BATCH: ', carIdStart, carIdEnd);
+  for (var carId = carIdStart; carId <= carIdEnd; carId++) {
     carPhotosToDB.push({ carId, photoId });
-    carPhotosCount++;
-  });
+    // console.log(modelId, carId, photoId);
+  }
   return CarsPhoto.bulkCreate(carPhotosToDB);
 };
+
 
 // ========================================================
 // CATEGORIES
@@ -236,6 +243,7 @@ Make.hasMany(Model);
 Model.belongsTo(Category);
 Category.hasMany(Model);
 
+Model.hash = {};
 
 // Create bulk upload compatabile data object and load to DB
 const modelsToDB = [];
@@ -243,7 +251,7 @@ const modelsToDB = [];
 Promise.all(catMakesLoadFinished)
   .then(() => {
     let modelCount = 1;
-    images.forEach((image, index) => {
+    images.forEach((image) => {
       // image string format: 'category/Make/modelNumber/imageNumber.jpg'
       // e.g. 'crossover/Dodge/2/0.jpg'
       if (image) {
@@ -274,7 +282,9 @@ Promise.all(catMakesLoadFinished)
                       };
                       // Push the model object to array for bulkCreate
                       modelsToDB.push(modelToDB);
-                      modelCount++
+                      // Store model name to id lookup for offline reference
+                      Model.hash[make + modelToDB.name] = modelToDB.id;
+                      modelCount++;
                       // Resolve modelGenStarted now that we've started the load and modelGenFinished contains new promises
                       modelGenFinished[0].resolve('DONE');
                     })
@@ -333,8 +343,9 @@ Photo.sync({ force: dropExistingTables })
   });
 
 
+  
 // ========================================================
-// CARS
+// CARS - DEFINE SCHEMA
 // ========================================================
 
 // Define schema for Cars in DB
@@ -362,28 +373,8 @@ Car.belongsTo(Model);
 Model.hasMany(Car);
 
 
-// Create bulk upload compatabile data object and load to DB
-// For each model (by name), seed cars
-
-let batch = 1;
-// After seeding of car models is complete
-modelLoadStarted.then(() => {
-  Promise.all(modelLoadFinished)
-    .then(() => Car.sync({ force: dropExistingTables }))
-    .then(() => { 
-      modelsToDB.forEach((model) => {
-        loadCarsToDB(model.id)
-          .then(() => {
-            console.log('Load Cars to DB, Batch:', batch); 
-            batch++;
-          });
-      });
-    });
-});
-
-
 // ========================================================
-// CARSPHOTOS
+// CARSPHOTOS - DEFINE SCHEMA
 // ========================================================
 
 // Get cars of a certain model from the DB, including their model, make and category
@@ -406,17 +397,37 @@ CarsPhoto.belongsTo(Photo);
 Car.hasMany(CarsPhoto);
 Photo.hasMany(CarsPhoto);
 
-// Get all photos in the DB
-  // Loop thru each photo
-    // Based on the key, get the model name
-    // Get the model_id from the model name
-    // Get all cars with the same model_id
-    // seed carPhotos progressively with car_id and photo_id
+
+// ========================================================
+// CARS AND CARSPHOTOS - SEED DB
+// ========================================================
 
 let carsPhotoBatch = 1;
 let carsPhototimer = 0;
-carLoadStarted.then(() => {
-  Promise.all(carLoadFinished)
+let batch = 1;
+let carsTimer = 0;
+
+modelLoadStarted.then(() => {
+  Promise.all(modelLoadFinished)
+    .then(() => Car.sync({ force: dropExistingTables }))
+    .then(() => { 
+    // For each model (by name), seed cars
+      modelsToDB.forEach((model) => {
+        carLoadFinished[0].resolve('DONE');
+        setTimeout(() => {
+          loadCarsToDB(model.id)
+            .then(() => {
+              console.log(`Load Cars to DB (${carsPerModel}/batch). Batch #:`, batch); 
+              batch++;
+            });
+        }, carsTimer);
+        carsTimer += carLoadInterval;
+      });
+    })
+    // Get all photos in the DB
+    // Loop thru each photo
+    // Infer the car id range from the model id (lookup model id via Model.hash)
+    // seed carPhotos progressively with car_id and photo_id
     .then(() => { return CarsPhoto.sync({ force: dropExistingTables }); })
     .then(() => { return Photo.findAll({}); })
     .then((photos) => {
@@ -424,20 +435,15 @@ carLoadStarted.then(() => {
         const regex = new RegExp(photoRootUrl, 'g');
         const key = photo.dataValues.url.replace(regex, '');
         const modelName = attrFromImgKey(key).model;
-        const { make, imageNumber } = attrFromImgKey(key);    
-        getModelIdFromName(modelName, make)
-          .then((modelId) => { return getCarsFromModelId(modelId); })
-          .then((cars) => { 
-            let carIds = cars.map(car => car.dataValues.id);
-            setTimeout(() => { 
-              attachPhotosToCars(carIds, photo.dataValues.id) 
-                .then(() => {
-                  console.log('CARSPHOTOS LOAD TO DB #: ', carsPhotoBatch);
-                  carsPhotoBatch++;
-                });
-            }, carsPhototimer);
-            carsPhototimer += carsPhotoLoadInterval;
-          });
+        const {make} = attrFromImgKey(key);
+        setTimeout(() => {
+          attachPhotosToCars(Model.hash[make+modelName], photo.dataValues.id)
+            .then(() => {
+              console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch #:`, carsPhotoBatch);
+              carsPhotoBatch++;
+            });
+        }, carsPhototimer);
+        carsPhototimer += carsPhotoLoadInterval;
       });
     });
 });
