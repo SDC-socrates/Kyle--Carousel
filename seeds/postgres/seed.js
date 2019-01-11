@@ -55,12 +55,21 @@ const getMakeIdFromName = (name) => {
   });
 };
 
-// Returns a Promise that resolves to the found models with make
-const getModelsFromName = (name) => {
-  return Model.findAll({
-    where: { name },
-    include: [Make]
+// Returns a Promise that resolves to the found modelId
+const getModelIdFromName = (name, make) => {
+  const promise = new Promise((resolve, reject) => {
+    Model.findAll({
+      where: { name },
+      include: [Make]
+    })
+      .then((results) => {
+        return results.filter((result) => {
+          return result.dataValues.make.name === make;
+        })[0].dataValues.id;
+      })
+      .then((id) => { resolve(id); });
   });
+  return promise;
 };
 
 // Returns a Promise that resolves to the found cars with model, make and category
@@ -351,18 +360,13 @@ modelLoadStarted.then(() => {
           images.forEach((image, index) => {
             if (image) {
               // For each image, identify the make and model name from the key
-              const make = attrFromImgKey(image).make;
-              const imageNumber = attrFromImgKey(image).imageNumber;
+              const { make } = attrFromImgKey(image);
+              const { imageNumber } = attrFromImgKey(image);
               const modelName = attrFromImgKey(image).model;
               // For each model (not each image)
-              if (imageNumber == 0 && index < 10) {
+              if (imageNumber == 0 && index >= 0) {
                 // Get the modelId from the DB
-                getModelsFromName(modelName)
-                  .then((results) => {
-                    return results.filter((result) => {
-                      return result.dataValues.make.name === make;
-                    })[0].dataValues.id;
-                  })
+                getModelIdFromName(modelName, make)
                   .then((modelId) => {
                     // Create 8800 cars from each model and load into DB
                     // Push a new promise into carLoadFinish that waits for the prior promise to finish
@@ -438,6 +442,7 @@ carLoadStarted.then(() => {
     .then((photos) => {
       photos.forEach((photo) => {
         console.log(photo.dataValues.id, photo.dataValues.url);
+        var modelName = attrFromImgKey(photo.dataValues.url).model;
       })
     })
 });
