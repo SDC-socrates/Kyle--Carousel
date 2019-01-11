@@ -17,10 +17,10 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carLoadInterval = 0;
-const carsPhotoLoadInterval = 0;
+const carLoadInterval = 3000;
+const carsPhotoLoadInterval = 3000;
 const photoRootUrl = 'https://turash-assets.s3.us-west-2.amazonaws.com/';
-const carsPerModel = 5;
+const carsPerModel = 17550;
 const photosPerCar = 2;
 
 // ========================================================
