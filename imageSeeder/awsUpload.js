@@ -1,31 +1,30 @@
-var AWS = require('aws-sdk');
-var fs = require('fs');
+const AWS = require('aws-sdk');
+const fs = require('fs');
 const fsPromises = fs.promises;
 
 // Initialize the Amazon Cognito credentials provider
-AWS.config.region = 'INSERT_AWS_IAM_REGION'; 
+AWS.config.region = 'INSERT_AWS_IAM_REGION';
 AWS.config.credentials = new AWS.CognitoIdentityCredentials({
-    IdentityPoolId: 'INSERT_AWS_IAM_IDENTITY_POOL_ID',
+  IdentityPoolId: 'INSERT_AWS_IAM_IDENTITY_POOL_ID',
 });
 AWS.config.update({
   accessKeyId: 'INSERT_AWS_IAM_USER_ACCESS_KEY_ID',
-  secretAccessKey: 'INSERT_AWS_IAM_USER_SECRET_ACCESS_KEY'  
-})
-var bucketName = 'INSERT_S3_BUCKET_NAME';
-var s3 = new AWS.S3({
+  secretAccessKey: 'INSERT_AWS_IAM_USER_SECRET_ACCESS_KEY',
+});
+const s3 = new AWS.S3({
   apiVersion: '2006-03-01',
   params: {
-    Bucket: 'INSERT_S3_BUCKET_NAME'
+    Bucket: 'INSERT_S3_BUCKET_NAME',
   },
 });
 
-var fileCount = 0;
-var uploadCount = 0;
+let fileCount = 0;
+let uploadCount = 0;
 
-var promises = [];
+let promises = [];
 
 // Set rootDir to the directory where download.js downloaded images
-var rootDir = 'upload';
+const rootDir = 'upload';
 // Iterate through rootDir/category/make/model/output/images directory structure
 fsPromises.readdir(`./${rootDir}`)
   .then(categories => {
@@ -40,9 +39,9 @@ fsPromises.readdir(`./${rootDir}`)
                     .then(images => {
                       images.forEach((image, imageNumber) => {
                         // Determine the file extension
-                        var fileExt = image.split('.').pop();
+                        let fileExt = image.split('.').pop();
                         // Only upload the first two images
-                        if (imageNumber <2) {
+                        if (imageNumber < 2) {
                           fileCount++;
                           fsPromises.readFile(`./${rootDir}/${category}/${make}/${model}/output/images/${image}`)
                             .then(file => {
@@ -50,8 +49,8 @@ fsPromises.readdir(`./${rootDir}`)
                                 s3.upload({
                                   Key: `${category}/${make}/${modelNumber}/${imageNumber}.${fileExt}`,
                                   Body: file,
-                                  ACL: 'public-read'
-                                }, function(err, data) {
+                                  ACL: 'public-read',
+                                }, (err, data) => {
                                   uploadCount++;
                                   console.log(`UPLOAD ${uploadCount}: ${category}/${make}/${modelNumber}/${imageNumber}.${fileExt}`);
                                   if (err) {
@@ -59,7 +58,7 @@ fsPromises.readdir(`./${rootDir}`)
                                     reject(err);
                                   } else {
                                     resolve(data);
-                                    console.log('Success.')
+                                    console.log('Success.');
                                   }
                                 });
                               }));
@@ -73,14 +72,13 @@ fsPromises.readdir(`./${rootDir}`)
                                     .then(console.log('Results written to uploads.json.'));
                                 });
                               }
-                            }
-                            ); 
+                            });
                         }
-                      })
-                    })
-                })
-              })
-          })
-        })
-    })
+                      });
+                    });
+                });
+              });
+          });
+        });
+    });
   });
