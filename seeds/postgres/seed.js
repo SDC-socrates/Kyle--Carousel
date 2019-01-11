@@ -17,8 +17,8 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carLoadInterval = 0;
-const carsPhotoLoadInterval = 0;
+const carLoadInterval = 500;
+const carsPhotoLoadInterval = 500;
 const photoRootUrl = 'https://turash-assets.s3.us-west-2.amazonaws.com/';
 
 // ========================================================
@@ -104,11 +104,11 @@ const attrFromImgKey = (string) => {
   }
 };
 
-// Creates 8800 random cars per model, loads it the DB and returns the Sequelize Promise
+// Creates 17550 random cars per model, loads it the DB and returns the Sequelize Promise
 let carCount = 0;
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 8800; i++) {
     carsToDB.push({
       status: randomStatus(),
       lat: randomLat(),
