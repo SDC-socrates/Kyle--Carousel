@@ -3,6 +3,12 @@ const sequelize = new Sequelize('turash_c', 'postgres', '6042783128', {
   host: 'localhost',
   dialect: 'postgres',
   operatorsAliases: false,
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 100000
+  },
 });
 
 sequelize
