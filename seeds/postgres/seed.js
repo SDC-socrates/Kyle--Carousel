@@ -108,7 +108,7 @@ const attrFromImgKey = (string) => {
 let carCount = 0;
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
-  for (let i = 0; i < 8800; i++) {
+  for (let i = 0; i < 1; i++) {
     carsToDB.push({
       status: randomStatus(),
       lat: randomLat(),
@@ -242,6 +242,7 @@ const modelsToDB = [];
 // When categories and modesl have been loaded
 Promise.all(catMakesLoadFinished)
   .then(() => {
+    let modelCount = 1;
     images.forEach((image, index) => {
       // image string format: 'category/Make/modelNumber/imageNumber.jpg'
       // e.g. 'crossover/Dodge/2/0.jpg'
@@ -262,6 +263,7 @@ Promise.all(catMakesLoadFinished)
                     .then(results => results.dataValues.id)
                     .then((makeId) => {
                       const modelToDB = {
+                        id: modelCount,
                         // Create model name based on first two letters of category - modelNumber
                         name: attrFromImgKey(image).model,
                         // Create model year based on random year between oldest and latest
@@ -272,6 +274,7 @@ Promise.all(catMakesLoadFinished)
                       };
                       // Push the model object to array for bulkCreate
                       modelsToDB.push(modelToDB);
+                      modelCount++
                       // Resolve modelGenStarted now that we've started the load and modelGenFinished contains new promises
                       modelGenFinished[0].resolve('DONE');
                     })
@@ -360,58 +363,21 @@ Model.hasMany(Car);
 
 
 // Create bulk upload compatabile data object and load to DB
-// Going thru image list, for each model (by name), seed 8800 cars
+// For each model (by name), seed cars
 
 let batch = 1;
 // After seeding of car models is complete
 modelLoadStarted.then(() => {
   Promise.all(modelLoadFinished)
-    .then(() => {
-      Car.sync({ force: dropExistingTables })
-        .then(() => {
-          images.forEach((image, index) => {
-            if (image) {
-              // For each image, identify the make and model name from the key
-              const { make } = attrFromImgKey(image);
-              const { imageNumber } = attrFromImgKey(image);
-              const modelName = attrFromImgKey(image).model;
-              // For each model (not each image)
-              if (imageNumber == 0 && index >= 0) {
-                // Get the modelId from the DB
-                getModelIdFromName(modelName, make)
-                  .then((modelId) => {
-                    // Create 8800 cars from each model and load into DB
-                    // Push a new promise into carLoadFinish that waits for the prior promise to finish
-                    // Push a new unresolved promise into the queue
-                    carLoadFinished.push(
-                      new Promise((resolve, reject) => {
-                        // If first upload, execute immediately
-                        var currentPromiseIndex = carLoadFinished.length;
-                        if (currentPromiseIndex === 1) {
-                          carLoadFinished[0].resolve('DONE');
-                          loadCarsToDB()
-                            // Promise should resolve after successful DB load
-                            .then(resolve('DONE'));
-                        } else {
-                          // Otherwise, when prior promise is resolved, execute this one.
-                          carLoadFinished[currentPromiseIndex-1].then(() => {
-                            // load cars to DB, taking into account delay setting
-                            setTimeout(() => {
-                              console.log('CARS BATCH LOAD TO DB #: ', batch);
-                              batch++;
-                              loadCarsToDB(modelId)
-                                // Promise should resolve after successful DB load
-                                .then(resolve('DONE'));
-                            }, carLoadInterval);
-                          });
-                        }
-                      })
-                    )  
-                  });
-              }
-            }
+    .then(() => Car.sync({ force: dropExistingTables }))
+    .then(() => { 
+      modelsToDB.forEach((model) => {
+        loadCarsToDB(model.id)
+          .then(() => {
+            console.log('Load Cars to DB, Batch:', batch); 
+            batch++;
           });
-        })
+      });
     });
 });
 
