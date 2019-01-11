@@ -3,7 +3,12 @@ const sequelize = require('./config');
 const downloadedModels = require('../../imageSeeder/models.js');
 const fs = require('fs');
 const fsPromises = fs.promises;
-let images;
+
+// Get the list of images uploaded to s3
+const uploads = fs.readFileSync('../../imageSeeder/uploads.json');
+const images = JSON.parse(uploads.toString()).map((item) => {
+  return item.key;
+});
 
 
 // ========================================================
@@ -12,7 +17,7 @@ let images;
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-
+const carLoadInterval = 1000;
 
 // ========================================================
 // PROMISES TO HELP SEQUENCE ASYNC OPERATIONS
@@ -30,6 +35,7 @@ const carLoadFinished = [];
 const carLoadStarted = new Promise((resolve, reject) => {
   carLoadFinished.push({ resolve, reject });
 });
+
 
 // ========================================================
 // HELPER FUNCTIONS
@@ -55,6 +61,44 @@ const getModelsFromName = (name) => {
     where: { name },
     include: [Make]
   });
+};
+
+// Returns a Promise that resolves to the found cars with model, make and category
+const getCarsFromModelName = (name) => {
+  return Model.findAll({
+    where: { name },
+    include: [Make]
+  });
+};
+
+const randomStatus = () => {
+  if (Math.random() < 0.5) {
+    return 'Active';
+  } return 'Retired';
+};
+
+const randomLat = () => {
+  return (Math.random() * 360 - 180).toFixed(2);
+};
+
+const randomLong = () => {
+  return (Math.random() * 170.1 - 85.05).toFixed(2);
+};
+
+// Creates 8800 random cars per model, loads it the DB and returns the Sequelize Promise
+let carCount = 0;
+const loadCarsToDB = (modelId) => {
+  const carsToDB = [];
+  for (let i = 0; i < 8800; i++) {
+    carsToDB.push({
+      status: randomStatus(),
+      lat: randomLat(),
+      long: randomLong(),
+      modelId,
+    });
+    carCount++;
+  }
+  return Car.bulkCreate(carsToDB);
 };
 
 // ========================================================
@@ -168,11 +212,6 @@ const modelsToDB = [];
 // When categories and modesl have been loaded
 Promise.all(catMakesLoadFinished)
   .then(() => {
-    // Get the list of images uploaded to s3
-    const file = fs.readFileSync('../../imageSeeder/uploads.json');
-    images = JSON.parse(file.toString()).map((item) => {
-      return item.key;
-    });
     images.forEach((image, index) => {
       // image string format: 'category/Make/modelNumber/imageNumber.jpg'
       // e.g. 'crossover/Dodge/2/0.jpg'
@@ -228,6 +267,45 @@ modelGenStarted.then(() => {
 
 
 // ========================================================
+// PHOTOS
+// ========================================================
+
+// Define schema for Photos in DB
+const Photo = sequelize.define('photo', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+  url: {
+    type: Sequelize.STRING,
+  },
+}, {
+  createdAt: false,
+  updatedAt: false,
+});
+
+// Create bulk upload compatabile data object
+const photosToDB = [];
+images.forEach((imageKey) => {
+  photosToDB.push({url: `https://turash-assets.s3.us-west-2.amazonaws.com/${imageKey}`});
+});
+
+// Write Photos to DB
+Photo.sync({ force: dropExistingTables })
+  .then(() => {
+    Photo.bulkCreate(photosToDB);
+  });
+
+// Get all photos in the DB
+  // Loop thru each photo
+    // Based on the key, get the model name
+    // Get the model_id from the model name
+    // Get all cars with the same model_id
+    // seed carPhotos progressively with car_id and photo_id
+
+
+// ========================================================
 // CARS
 // ========================================================
 
@@ -255,11 +333,11 @@ const Car = sequelize.define('car', {
 Car.belongsTo(Model);
 Model.hasMany(Car);
 
+
 // Create bulk upload compatabile data object and load to DB
 // Going thru image list, for each model (by name), seed 8800 cars
 
-let carCount = 0;
-
+let batch = 1;
 // After seeding of car models is complete
 modelLoadStarted.then(() => {
   Promise.all(modelLoadFinished)
@@ -267,42 +345,50 @@ modelLoadStarted.then(() => {
       Car.sync({ force: dropExistingTables })
         .then(() => {
           images.forEach((image, index) => {
-            // For each image, identify the make and model name from the key
-            const make = image.split('/')[1];
-            const imageNumber = image.split('/')[3].split('.')[0];
-            const modelName = `${image.split('/')[0].slice(0, 2).toUpperCase()}-${image.split('/')[2]}`;
-            // For each model (not each image)
-            console.log(imageNumber);
-            if (imageNumber == 0) {
-              // Get the modelId from the DB
-              getModelsFromName(modelName)
-                .then((results) => {
-                  return results.filter((result) => {
-                    return result.dataValues.make.name === make;
-                  })[0].dataValues.id;
-                })
-                .then((modelId) => {
-                  // Create 8800 cars from each model and load into DB
-                  // Push a new promise into carLoadFinish that waits for the prior promise to finish
-                  carLoadFinished.push(
-                    
-                  );
-                  const carsToDB = [];
-                  for (let i = 0; i < 8800; i++) {
-                    carsToDB.push({
-                      status: 'Active',
-                      lat: 123,
-                      long: 321,
-                      modelId,
-                    });
-                    carCount++;
-                    console.log(carCount);
-                  }
-                  carLoadFinished.push(
-                    Car.bulkCreate(carsToDB)
-                      .then(carLoadFinished[0].resolve('DONE'))
-                  );
-                });
+            if (image) {
+              // For each image, identify the make and model name from the key
+              const make = image.split('/')[1];
+              const imageNumber = image.split('/')[3].split('.')[0];
+              const modelName = `${image.split('/')[0].slice(0, 2).toUpperCase()}-${image.split('/')[2]}`;
+              // For each model (not each image)
+              if (imageNumber == 0 && index >= 0) {
+                // Get the modelId from the DB
+                getModelsFromName(modelName)
+                  .then((results) => {
+                    return results.filter((result) => {
+                      return result.dataValues.make.name === make;
+                    })[0].dataValues.id;
+                  })
+                  .then((modelId) => {
+                    // Create 8800 cars from each model and load into DB
+                    // Push a new promise into carLoadFinish that waits for the prior promise to finish
+                    // Push a new unresolved promise into the queue
+                    carLoadFinished[0].resolve('DONE');
+                    carLoadFinished.push(
+                      new Promise((resolve, reject) => {
+                        // If first upload, execute immediately
+                        var currentPromiseIndex = carLoadFinished.length;
+                        if (currentPromiseIndex === 1) {
+                          loadCarsToDB()
+                            // Promise should resolve after successful DB load
+                            .then(resolve('DONE'));
+                        } else {
+                          // Otherwise, when prior promise is resolved, execute this one.
+                          carLoadFinished[currentPromiseIndex-1].then(() => {
+                            // load cars to DB, taking into account delay setting
+                            setTimeout(() => {
+                              console.log('DB BATCH LOAD #: ', batch);
+                              batch++;
+                              loadCarsToDB(modelId)
+                                // Promise should resolve after successful DB load
+                                .then(resolve('DONE'));
+                            }, carLoadInterval);
+                          });
+                        }
+                      })
+                    )  
+                  });
+              }
             }
           });
         })
@@ -310,7 +396,26 @@ modelLoadStarted.then(() => {
 });
 
 
-// 2) Create random cars
-  // image dir: category/make/modelNumber
+// ========================================================
+// CARSPHOTOS
+// ========================================================
 
-// 3) Create random carsPhotos
+// Get cars of a certain model from the DB, including their model, make and category
+// Create carPhotos for all cars of the same model at one time (as they will have the same images)
+
+// Define schema for carsPhoto in DB
+const CarsPhoto = sequelize.define('carsPhoto', {
+  id: {
+    type: Sequelize.INTEGER,
+    primaryKey: true,
+    autoIncrement: true,
+  },
+}, {
+  createdAt: false,
+  updatedAt: false,
+});
+
+CarsPhoto.belongsTo(Car);
+CarsPhoto.belongsTo(Photo);
+Car.hasMany(CarsPhoto);
+Photo.hasMany(CarsPhoto);

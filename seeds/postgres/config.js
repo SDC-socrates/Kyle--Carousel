@@ -6,7 +6,7 @@ const sequelize = new Sequelize('turash_c', 'postgres', '6042783128', {
   pool: {
     max: 5,
     min: 0,
-    acquire: 30000,
+    acquire: 120000,
     idle: 100000
   },
 });
