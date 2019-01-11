@@ -12,7 +12,7 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 
 
 // ========================================================
-// CONFIG
+// SPECIFIC CONFIGS (See seed-helpers for general configs)
 // ========================================================
 const dropExistingTables = true;
 const latestModelYear = 2019;
