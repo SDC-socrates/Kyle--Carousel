@@ -45,6 +45,7 @@ const carsPhotosLoadStarted = new Promise((resolve, reject) => {
   carsPhotosLoadFinished.push({ resolve, reject });
 });
 
+
 // ========================================================
 // HELPER FUNCTIONS
 // ========================================================
