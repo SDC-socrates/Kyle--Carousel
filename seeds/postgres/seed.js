@@ -110,10 +110,10 @@ const randomLong = () => {
 // e.g. 'crossover/Dodge/2/0.jpg'
 const attrFromImgKey = (string) => {
   return {
-    model: `${string.split('/')[0].slice(0,2).toUpperCase()}-${string.split('/')[2]}`,
+    model: `${string.split('/')[0].slice(0, 2).toUpperCase()}-${string.split('/')[2]}`,
     category: string.split('/')[0],
     make: string.split('/')[1],
-    imageNumber: string.split('/')[3].split('.')[0]
+    imageNumber: string.split('/')[3].split('.')[0],
   }
 };
 
@@ -262,9 +262,9 @@ Promise.all(categoryAndMakesLoaded)
     images.forEach((image) => {
       if (image) {
         // For each image, identify attributes from the key
-        const {category} = attrFromImgKey(image);
-        const {make} = attrFromImgKey(image);
-        const {imageNumber} = attrFromImgKey(image);
+        const { category } = attrFromImgKey(image);
+        const { make } = attrFromImgKey(image);
+        const { imageNumber } = attrFromImgKey(image);
         // Only create a model for the first image of each model
         if (imageNumber == 0) {
           // Get the categoryId and MakeId from the DB
@@ -350,7 +350,6 @@ Photo.sync({ force: dropExistingTables })
   });
 
 
-  
 // ========================================================
 // CARS - DEFINE SCHEMA
 // ========================================================
@@ -421,36 +420,35 @@ modelLoadStarted.then(() => {
     .then(() => { 
     // For each car model, seed cars
       modelsToDB.forEach((model, index) => {
-        // This conditional allows us to reduce range of seeding for debugging 
+        // This conditional allows us to reduce range of seeding for debug puurposes
         if (index >= 0) {
-          carLoadFinished[0].resolve('DONE');
+          carLoadFinished[0].resolve('Done');
           // Keep DB operations in an array of promises so we can track when all are complete
-          carLoadFinished.push(promise = new Promise((resolve, reject) => {
+          carLoadFinished.push(new Promise((resolve, reject) => {
             // Delay each DB operation based on delay config
             setTimeout(() => {
               loadCarsToDB(model.id)
                 .then(() => {
                   console.log(`Load Cars to DB (${carsPerModel}/batch). Batch #:`, carsBatch); 
                   carsBatch++;
-                  resolve('DONE');
+                  resolve('Done');
                   return;
                 })
                 .catch((err) => { console.log(err); });
             }, carsTimer);
             carsTimer += carLoadInterval;
-          }
-          ));
+          }));
         }
-     })
-    })
+      });
+    });
 });
 
 // Once car load is complete, start carsPhotos load
 carLoadStarted.then(() => {
   Promise.all(carLoadFinished)
-  .then(() => { return CarsPhoto.sync({ force: dropExistingTables }); })
+    .then(() => CarsPhoto.sync({ force: dropExistingTables }))
     // Get all photos in the DB
-    .then(() => { return Photo.findAll({}); })
+    .then(() => Photo.findAll({}))
     .then((photos) => {
       // Loop thru each photo
       photos.forEach((photo) => {
@@ -458,11 +456,11 @@ carLoadStarted.then(() => {
         const regex = new RegExp(photoRootUrl, 'g');
         const key = photo.dataValues.url.replace(regex, '');
         const modelName = attrFromImgKey(key).model;
-        const {make} = attrFromImgKey(key);
+        const { make } = attrFromImgKey(key);
         // Delay each DB operation based on delay config
         setTimeout(() => {
           // seed carPhotos based on car_id (infererd from model id) and photo id
-          attachPhotosToCars(Model.hash[make+modelName], photo.dataValues.id)
+          attachPhotosToCars(Model.hash[make + modelName], photo.dataValues.id)
             .then(() => {
               console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch #:`, carsPhotoBatch);
               carsPhotoBatch++;

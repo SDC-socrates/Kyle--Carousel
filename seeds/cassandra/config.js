@@ -10,9 +10,9 @@ const client = new cassandra.Client({
   // WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
 
 // Uncomment to enable verbose logging
-// client.on('log', (level, className, msg, furtherInfo) => {
-//   console.log(level, className, msg, furtherInfo);
-// });
+client.on('log', (level, className, msg, furtherInfo) => {
+  console.log(level, className, msg, furtherInfo);
+});
 
 // Connect to DB
 client.connect(err => console.log(err));
