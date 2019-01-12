@@ -1,3 +1,4 @@
+/* eslint-disable no-loop-func */
 const cassandra = require('cassandra-driver');
 const client = require('./config.js');
 const createTables = require('./createTables.js');
@@ -8,8 +9,8 @@ const seedHelpers = require('../seedHelpers.js');
 // SPECIFIC CONFIGS (See seed-helpers for general configs)
 // ========================================================
 
-const loadBatchSize = 1000;
-const totalBatches = 0;
+const loadBatchSize = 17550;
+const totalBatches = Object.keys(seedHelpers.carModels).length;
 
 
 // ========================================================
@@ -38,39 +39,53 @@ createTables.then(() => {
   // Track time for console logging
   console.time('Completed full seeding');
 
-  for (let batch = 1; batch <= totalBatches; batch++) {
+  // Iterate through car models. For each, generate a batch of data and load into DB
+  Object.keys(seedHelpers.carModels).forEach((makeModel, batch) => {
     // Use promises to kick off next DB operation only after the last one has resolved
-    seedHelpers.promises.push( new Promise((resolve, reject) => {
-    seedHelpers.promises[batch - 1].then(() => {
-      // Clear the batch query statement
-      queries = [];
-      // Fill the batch query statement with queries
-      for (let queryCount = 1; queryCount <= loadBatchSize; queryCount++) {
-        const query = { ...queryTemplate };
-        query.params = [carId, 'status', 'category', 'make', 'model', seedHelpers.randomYear(), seedHelpers.randomLat(), seedHelpers.randomLong(), ['test1', 'test2']];
-        queries.push(query);
-        carId += 1;
-      }
-      // Set consistency to 'any' for lowest latency
-      const queryOptions = { prepare: true, consistency: cassandra.types.consistencies.any };
-      console.log(`Loading cars to DB. Batch size ${loadBatchSize}. Batch ${batch}/${totalBatches}.`)
-        const promise = client.batch(queries, queryOptions, (err) => {
+    seedHelpers.promises.push(new Promise((resolve, reject) => {
+      seedHelpers.promises[batch].then(() => {
+        // Clear the batch query statement
+        queries = [];
+        // Fill the batch query statement with queries
+        for (let queryCount = 1; queryCount <= loadBatchSize; queryCount++) {
+          const query = { ...queryTemplate };
+          query.params = [
+            carId,
+            seedHelpers.randomStatus(),
+            seedHelpers.carModels[makeModel].category,
+            seedHelpers.carModels[makeModel].make,
+            seedHelpers.carModels[makeModel].model,
+            seedHelpers.randomYear(),
+            seedHelpers.randomLat(),
+            seedHelpers.randomLong(),
+            seedHelpers.carModels[makeModel].photos,
+          ];
+          if (seedHelpers.carModels[makeModel].photos.length > 0) {
+            queries.push(query);
+          }
+          carId += 1;
+        }
+        // Set consistency to 'any' for lowest latency
+        const queryOptions = { prepare: true, consistency: cassandra.types.consistencies.any };
+        console.log(`Loading cars to DB. Batch size ${loadBatchSize}. Batch ${batch + 1}/${totalBatches}.`)
+        client.batch(queries, queryOptions, (err) => {
           if (err) { console.log(err); }
           // Log key info about the seed operation
           let timeNow = Date.now();
           let minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
           let averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
-          let estimatedTimeRemaining = ((totalBatches - batch) * averageTimePerBatch / 60).toFixed(2);
+          let estimatedTimeRemaining = ((totalBatches - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
           console.log(`Data updated on cluster. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
           resolve('Done');
         });
-      })
+      });
     }));
-  }
+  });
+
 
   // Log when all seeding is done
   Promise.all(seedHelpers.promises)
-    .then(() => { 
+    .then(() => {
       console.timeEnd('Completed full seeding'); 
     });
 });
