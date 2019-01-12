@@ -47,7 +47,7 @@ createTables.then(() => {
       // Fill the batch query statement with queries
       for (let queryCount = 1; queryCount <= loadBatchSize; queryCount++) {
         const query = { ...queryTemplate };
-        query.params = [carId, 'status', 'category', 'make', 'model', 2015, 10.25, -53.1, ['test1', 'test2']];
+        query.params = [carId, 'status', 'category', 'make', 'model', seedHelpers.randomYear(), seedHelpers.randomLat(), seedHelpers.randomLong(), ['test1', 'test2']];
         queries.push(query);
         carId += 1;
       }
@@ -67,7 +67,7 @@ createTables.then(() => {
       })
     }));
   }
-  
+
   // Log when all seeding is done
   Promise.all(seedHelpers.promises)
     .then(() => { 
