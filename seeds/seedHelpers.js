@@ -51,5 +51,16 @@ const randomLong = () => {
   return (Math.random() * 170.1 - 85.05).toFixed(2);
 };
 
+// Returns a random year between the years in the config
+const randomYear = () => oldestModelYear
+  + Math.round((Math.random() * (latestModelYear - oldestModelYear)));
 
-module.exports = { carLoadStarted, carLoadFinished, promises };
+
+module.exports = { 
+  carLoadStarted, 
+  carLoadFinished, 
+  promises,
+  randomStatus,
+  randomLat,
+  randomLong
+};
