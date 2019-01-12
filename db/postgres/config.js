@@ -9,6 +9,7 @@ const sequelize = new Sequelize('turash_c', 'postgres', '6042783128', {
     acquire: 120000,
     idle: 100000
   },
+  benchmark: true,
 });
 
 sequelize
