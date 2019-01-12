@@ -9,10 +9,10 @@ const client = new cassandra.Client({
 // CREATE KEYSPACE turashc 
   // WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
 
-// Enable verbose logging
-client.on('log', (level, className, msg, furtherInfo) => {
-  console.log(level, className, msg, furtherInfo);
-});
+// Uncomment to enable verbose logging
+// client.on('log', (level, className, msg, furtherInfo) => {
+//   console.log(level, className, msg, furtherInfo);
+// });
 
 // Connect to DB
 client.connect(err => console.log(err));
