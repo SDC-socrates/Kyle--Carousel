@@ -1,5 +1,5 @@
 const cassandra = require('cassandra-driver');
-const client = require('./config.js')
+const client = require('../../db/cassandra/config.js')
 
 
 // Create 'carsByStatusAndCategory' Table
