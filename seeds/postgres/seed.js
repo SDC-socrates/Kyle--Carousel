@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const sequelize = require('./config');
+const sequelize = require('../../db/postgres/config');
 const downloadedModels = require('../../imageSeeder/models.js');
 const fs = require('fs');
 const fsPromises = fs.promises;
