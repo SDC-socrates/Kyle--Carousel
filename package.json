@@ -6,7 +6,7 @@
     "start": "node server/index.js",
     "web": "webpack -d --watch",
     "fdc-seed": "seed",
-    "fdc-test": "jest",
+    "fdc-test": "jest"
   },
   "repository": {
     "type": "git",
@@ -41,6 +41,7 @@
   "dependencies": {
     "aws-sdk": "^2.381.0",
     "body-parser": "^1.17.0",
+    "cassandra-driver": "^4.0.0",
     "cors": "^2.8.5",
     "express": "^4.15.0",
     "jquery": "^3.3.1",
