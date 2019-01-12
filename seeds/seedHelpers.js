@@ -34,4 +34,22 @@ const carsPhotosLoadStarted = new Promise((resolve, reject) => {
 // HELPER FUNCTIONS
 // ========================================================
 
+// Returns a random car status
+const randomStatus = () => {
+  if (Math.random() < 0.5) {
+    return 'Active';
+  } return 'Retired';
+};
+
+// Returns a random latitude value
+const randomLat = () => {
+  return (Math.random() * 360 - 180).toFixed(2);
+};
+
+// Returns a random longtitude value
+const randomLong = () => {
+  return (Math.random() * 170.1 - 85.05).toFixed(2);
+};
+
+
 module.exports = { carLoadStarted, carLoadFinished, promises };
