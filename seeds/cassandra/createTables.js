@@ -34,4 +34,17 @@ const createTable = client.execute(queryCreateCBSC)
       .then(secondResult => console.log(secondResult));
   });
 
+
+  // categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url
+  // Search = Select SUVs (compound partition key) that are active (compound partition key) between certain lats (clustering) and years (secondary index), and longs
+  const queryCreateCars = `
+  CREATE MATERIALIZED VIEW IF NOT EXISTS carsstatcatlat AS
+    SELECT * FROM carsByStatusAndCategory
+    WHERE category IS NOT NULL AND status IS NOT NULL AND lat IS NOT NULL
+    PRIMARY KEY ((category, status), lat)
+    WITH CLUSTERING ORDER BY (lat ASC)
+  `;
+  // We'll also create a secondary index by year.
+
+
 module.exports = createTable;
