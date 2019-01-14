@@ -23,7 +23,7 @@ let queries = [];
 // Define a template for each query in the batch query statement
 const queryTemplate = {
   query: `
-    INSERT INTO carsByStatusAndCategory 
+    INSERT INTO cars 
       (car_id, status, category, make, model, year, lat, long, photos)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
@@ -68,6 +68,7 @@ createTables.then(() => {
         // Set consistency to 'any' for lowest latency
         const queryOptions = { prepare: true, consistency: cassandra.types.consistencies.any };
         console.log(`Loading cars to DB. Batch size ${loadBatchSize}. Batch ${batch + 1}/${totalBatches}.`)
+        console.log(`query array length : ${queries.length}`);
         client.batch(queries, queryOptions, (err) => {
           if (err) { console.log(err); }
           // Log key info about the seed operation
