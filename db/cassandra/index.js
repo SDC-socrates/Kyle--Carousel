@@ -13,25 +13,18 @@ const execute = (queryString) => {
 
 execute(`SELECT * FROM cars WHERE car_id = 9999999;`);
 
-execute(`
-  SELECT * FROM carsbystatusandcategory 
-    WHERE category = 'crossover' 
-      AND status = 'Retired' 
-      AND year = 2008 and car_id=9999999;
-  `);
-
 // Get suggested cars given a category, status, year, lat and long...
 
 execute(`
   SELECT * 
-    FROM carsbystatusandcategory 
+    FROM carsstatcatlat 
     WHERE category = 'crossover' 
       AND status = 'Active' 
-      AND year > 2008 
-      AND year < 2010
-      AND long > 25
-      AND long < 30
       AND lat > 35
-      AND lat < 37
+      AND lat < 35.5
+      AND year > 2000 
+      AND year < 2010
+      AND long > 28
+      AND long < 28.5
       ALLOW FILTERING;
   `);
