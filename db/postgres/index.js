@@ -48,7 +48,7 @@ execute(`
 
 `
 CREATE MATERIALIZED VIEW carsbycatstatuslong AS
-  SELECT categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
+  SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
     FROM cars, models, makes, categories, "carsPhotos", photos 
     WHERE cars."modelId"=models.id 
       AND models."makeId"=makes.id 

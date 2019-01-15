@@ -2,7 +2,7 @@
 const cassandra = require('cassandra-driver');
 const client = require('../../db/cassandra/config.js')
 const createTables = require('./createTables.js');
-const seedHelpers = require('../seedHelpers.js');
+const seedHelpers = require('./seedHelpers.js');
 
 
 // ========================================================
