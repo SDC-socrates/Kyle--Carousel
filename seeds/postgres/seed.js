@@ -11,7 +11,7 @@ const downloadedModels = require('../../imageSeeder/models.js');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 17550;
+const carsPerModel = 100;
 
 
 // ========================================================
@@ -129,7 +129,7 @@ const attachPhotosToCars = (modelId, photoId) => {
 
 // Executes raw queries
 const execute = (queryString) => {
-  return sequelize.query(queryString);
+  return sequelize.query(queryString, { type: sequelize.QueryTypes.RAW });
 };
 
 // ========================================================
@@ -469,8 +469,8 @@ const queueCarPhotos = () => {
 async.parallelLimit(asyncSeries1, 1, () => {
   async.parallelLimit(asyncSeries2, 4, () => {
     // After all seeding operations are done, create materialized view
-    console.log('Seeding complete. Creating materialized view.')
-    return execute(`
+    console.log('Seeding complete. Creating materialized view.');
+    execute(`
     CREATE MATERIALIZED VIEW carsbycatstatuslong AS
       SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
         FROM cars, models, makes, categories, "carsPhotos", photos 
@@ -485,7 +485,7 @@ async.parallelLimit(asyncSeries1, 1, () => {
           cars.long
     `)
       // Then, create index
-      .then(execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
+      .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
       // Finally, log total time
       .then(() => console.timeEnd('Completed seeding and table setup.'));
   });
