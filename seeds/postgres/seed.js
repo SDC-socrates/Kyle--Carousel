@@ -27,8 +27,8 @@ const images = JSON.parse(uploads.toString()).map((item) => {
   return item.key;
 });
 
-const asyncSeries = [];
-
+const asyncSeries1 = [];
+const asyncSeries2 = [];
 
 // ========================================================
 // HELPER FUNCTIONS
@@ -157,7 +157,7 @@ categories.forEach((category) => {
 });
 
 // Queue up operations to write categories to DB
-asyncSeries.push((callback) => {
+asyncSeries1.push((callback) => {
   Category.sync({ force: dropExistingTables })
     .then(() => Category.bulkCreate(categoriesToDB))
     // Using async, kickoff the next operation after this one is done
@@ -198,7 +198,7 @@ makes.forEach((make) => {
 });
 
 // Queue up operations to write makes to DB
-asyncSeries.push((arg, callback) => {
+asyncSeries1.push((callback) => {
   Make.sync({ force: dropExistingTables })
     .then(() => Make.bulkCreate(makesToDB))
     // Using async, kickoff the next operation after this one is done
@@ -249,35 +249,34 @@ images.forEach((image) => {
     const { imageNumber } = attrFromImgKey(image);
     // Only create a model for the first image of each model
     if (imageNumber == 0) {
-      // First get the category ID
-      asyncSeries.push((arg, callback) => {
+      // Get the category ID and make ID
+      asyncSeries1.push((callback) => {
         getCategoryIdFromName(category)
           // Using async, kickoff the next operation after this one is done
-          .then(results => callback(null, results.dataValues.id));
-      });
-      // Then get the make ID
-      asyncSeries.push((categoryId, callback) => {
-        getMakeIdFromName(make)
-          .then(({ dataValues }) => {
-            const makeId = dataValues.id;
-            // Create a Model object compatible with sequelize upload
-            const modelToDB = {
-              // Set model year based on counter
-              id: modelCount,
-              name: attrFromImgKey(image).model,
-              // Set model year based on random year between oldest and latest
-              year: oldestModelYear
-                + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
-              makeId,
-              categoryId,
-            };
-            // Push the model object to array for bulkCreate
-            modelsToDB.push(modelToDB);
-            // Store model name to id lookup for offline reference
-            Model.hash[make + modelToDB.name] = modelToDB.id;
-            modelCount += 1;
-            // Using async, kickoff the next operation after this one is done
-            callback(null, null);
+          .then(results => results.dataValues.id)
+          .then((categoryId) => {
+            getMakeIdFromName(make)
+              .then(({ dataValues }) => {
+                const makeId = dataValues.id;
+                // Create a Model object compatible with sequelize upload
+                const modelToDB = {
+                  // Set model year based on counter
+                  id: modelCount,
+                  name: attrFromImgKey(image).model,
+                  // Set model year based on random year between oldest and latest
+                  year: oldestModelYear
+                    + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
+                  makeId,
+                  categoryId,
+                };
+                // Push the model object to array for bulkCreate
+                modelsToDB.push(modelToDB);
+                // Store model name to id lookup for offline reference
+                Model.hash[make + modelToDB.name] = modelToDB.id;
+                modelCount += 1;
+                // Using async, kickoff the next operation after this one is done
+                callback(null, null);
+              });
           });
       });
     }
@@ -285,11 +284,13 @@ images.forEach((image) => {
 });
 
 // Queue up operations to write models to DB
-asyncSeries.push((arg, callback) => {
+asyncSeries1.push((callback) => {
   Model.sync({ force: dropExistingTables })
     .then(() => Model.bulkCreate(modelsToDB))
+    // Queue up operations to write cars to DB
+    .then(() => queueCars())
     // Using async, kickoff the next operation after this one is done
-    .then(results => callback(null, null));
+    .then(() => callback(null, null));
 });
 
 
@@ -321,11 +322,18 @@ images.forEach((imageKey) => {
 });
 
 // Queue up operations to write photos to DB
-asyncSeries.push((arg, callback) => {
+let photos;
+asyncSeries1.push((callback) => {
   Photo.sync({ force: dropExistingTables })
     .then(() => Photo.bulkCreate(photosToDB))
-    // Using async, kickoff the next operation after this one is done
-    .then(() => callback(null, null));
+    .then(() => Photo.findAll({}))
+    .then((photosFromDB) => {
+      // Store list of photos for reference and add carPhotos seeding to queue
+      photos = photosFromDB;
+      queueCarPhotos();
+      // Using async, kickoff the next operation after this one is done
+      callback(null, null);
+    });
 });
 
 
@@ -386,66 +394,74 @@ Photo.hasMany(CarsPhoto);
 // ========================================================
 
 
-// Once model load is complete, start seeding cars
-asyncSeries.push((arg, callback) => {
+// Create tables in DB
+asyncSeries1.push((callback) => {
   Car.sync({ force: dropExistingTables })
-    .then(() => {
-      // Track time for console logging
-      let timeStart = Date.now();
-      // For each model, queue an operation to load a batch of cars into the DB
-      modelsToDB.forEach((model, batch) => {
-        asyncSeries.push((args, callback) => {
-          console.log(`Loading cars to DB. Batch size ${carsPerModel}. Batch ${batch + 1}/${modelsToDB.length}.`);
-          loadCarsToDB(model.id)
-            .then(() => {
-              // Log key info about the loading operation to the console
-              const timeNow = Date.now();
-              const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
-              const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
-              const estimatedTimeRemaining = ((modelsToDB.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
-              console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
-              // Using async, kickoff the next operation after this one is done
-              callback(null, null);
-            });
-        });
-      });
-
-      // Once car load is complete, start carsPhotos load
-      asyncSeries.push((arg, callback) => {
-        CarsPhoto.sync({ force: dropExistingTables })
-        // Get all photos in the DB
-          .then(() => Photo.findAll({}))
-          .then((photos) => {
-            // Track time for console logging
-            let timeStart = Date.now();
-            // Loop thru each photo
-            photos.forEach((photo, batch) => {
-              // Extract the key from the photo urls
-              key = photo.dataValues.url;
-              const modelName = attrFromImgKey(key).model;
-              const { make } = attrFromImgKey(key);
-              // For each photo, queue an async operation to create car-to-photo links in the DB
-              asyncSeries.push((arg, callback) => {
-                console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch ${batch}/${photos.length}`);
-                attachPhotosToCars(Model.hash[make + modelName], photo.dataValues.id)
-                  .then(() => {
-                    // Log key info about the seed operation
-                    const timeNow = Date.now();
-                    const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
-                    const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
-                    const estimatedTimeRemaining = ((photos.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
-                    console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
-                    // Using async, kickoff the next operation after this one is done
-                    callback(null, null);
-                  });
-              });
-            });
-            callback(null, null);
-          });
-      });
-      callback(null, null);
-    });
+    .then(() => CarsPhoto.sync({ force: dropExistingTables }))
+    .then(() => callback(null, null));
 });
 
-// Initiate all async operations
-async.waterfall(asyncSeries, () => console.timeEnd('Completed full seeding'));
+// Once models are loaded, for each model, load a batch of cars into the DB
+// Note: This queuing function gets called after models have been inserted into the DB      
+const queueCars = () => {
+  let timestart;
+  modelsToDB.forEach((model, batch) => {
+    asyncSeries2.push((callback) => {
+      // Track time for console logging
+      if (batch === 0) {
+        timeStart = Date.now(); 
+      }
+      console.log(`Loading cars to DB. Batch size ${carsPerModel}. Batch ${batch + 1}/${modelsToDB.length}.`);
+      loadCarsToDB(model.id)
+        .then(() => {
+          // Log key info about the loading operation to the console
+          const timeNow = Date.now();
+          const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
+          const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
+          const estimatedTimeRemaining = ((modelsToDB.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
+          console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
+          // Using async, kickoff the next operation after this one is done
+          callback(null, null);
+        });
+    });
+  });
+}
+
+// Once car load is complete, start carsPhotos load
+// Note: This queuing function gets called after photos have been fetched by the DB
+const queueCarPhotos = () => {
+  let timestart;
+  // Loop thru each photo
+  photos.forEach((photo, batch) => {
+    // Extract the key from the photo urls
+    const key = photo.dataValues.url;
+    const modelName = attrFromImgKey(key).model;
+    const { make } = attrFromImgKey(key);
+    // For each photo, queue an async operation to create car-to-photo links in the DB
+    asyncSeries2.push((callback) => {
+      // Track time for console logging
+      if (batch === 0) {
+        timeStart = Date.now(); 
+      }
+      console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch ${batch}/${photos.length}`);
+      // console.log(photo, Model.hash[make + modelName], photo.dataValues.id);
+      attachPhotosToCars(Model.hash[make + modelName], photo.dataValues.id)
+        .then(() => {
+          // Log key info about the seed operation
+          const timeNow = Date.now();
+          const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
+          const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
+          const estimatedTimeRemaining = ((photos.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
+          console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
+          // Using async, kickoff the next operation after this one is done
+          callback(null, null);
+        });
+    });
+  });
+};
+
+
+// Initiate async operations
+async.parallelLimit(asyncSeries1, 1, () => {
+  async.parallelLimit(asyncSeries2, 4, () => console.timeEnd('Completed full seeding'));
+});
