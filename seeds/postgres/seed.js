@@ -11,7 +11,7 @@ const downloadedModels = require('../../imageSeeder/models.js');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 100;
+const carsPerModel = 17550;
 
 
 // ========================================================
