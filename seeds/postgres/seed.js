@@ -19,7 +19,7 @@ const carsPerModel = 17550;
 // ========================================================
 
 // Track total time for console logging
-console.time('Completed full seeding');
+console.time('Completed seeding and table setup.');
 
 // Get the list of images uploaded to s3
 const uploads = fs.readFileSync('../../imageSeeder/uploads.json');
@@ -127,6 +127,10 @@ const attachPhotosToCars = (modelId, photoId) => {
   return CarsPhoto.bulkCreate(carPhotosToDB);
 };
 
+// Executes raw queries
+const execute = (queryString) => {
+  return sequelize.query(queryString);
+};
 
 // ========================================================
 // CATEGORIES
@@ -463,5 +467,26 @@ const queueCarPhotos = () => {
 
 // Initiate async operations
 async.parallelLimit(asyncSeries1, 1, () => {
-  async.parallelLimit(asyncSeries2, 4, () => console.timeEnd('Completed full seeding'));
+  async.parallelLimit(asyncSeries2, 4, () => {
+    // After all seeding operations are done, create materialized view
+    console.log('Seeding complete. Creating materialized view.')
+    return execute(`
+    CREATE MATERIALIZED VIEW carsbycatstatuslong AS
+      SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
+        FROM cars, models, makes, categories, "carsPhotos", photos 
+        WHERE cars."modelId"=models.id 
+          AND models."makeId"=makes.id 
+          AND models."categoryId"=categories.id 
+          AND "carsPhotos"."carId"=cars.id 
+          AND photos.id="carsPhotos"."photoId"
+        ORDER BY
+          categories.name,
+          cars.status,
+          cars.long
+    `)
+      // Then, create index
+      .then(execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
+      // Finally, log total time
+      .then(() => console.timeEnd('Completed seeding and table setup.'));
+  });
 });

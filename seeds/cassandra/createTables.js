@@ -4,7 +4,6 @@ const client = require('../../db/cassandra/config.js')
 
 // Create 'cars' Table
 // Purpose: Store and get attributes of a specific car
-// category and status are needed in the primary key as we can only add one additional column in MV later on
 const queryCreateCars = `
   CREATE TABLE IF NOT EXISTS carsstatcatlat (
     car_id int,
@@ -24,7 +23,7 @@ const createTable = client.execute(queryCreateCars)
   .then((result) => {
     console.log(result);
     // Create 'queryCreateCars' Materialized View
-    // Purpose: Find similar cars. e.g. Select SUVs (compound partition key) that are active (compound partition key) between certain lats (clustering) and years (secondary index), and longs
+    // Purpose: Find similar cars. e.g. Select SUVs (compound partition key) that are active (compound partition key) between certain lats (clustering), years (secondary index), and longs
     const queryCreateCSCL = `
     CREATE MATERIALIZED VIEW IF NOT EXISTS cars AS
       SELECT * FROM carsstatcatlat
