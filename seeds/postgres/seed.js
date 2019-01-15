@@ -467,7 +467,7 @@ const queueCarPhotos = () => {
 
 // Initiate async operations
 async.parallelLimit(asyncSeries1, 1, () => {
-  async.parallelLimit(asyncSeries2, 4, () => {
+  async.parallelLimit(asyncSeries2, 3, () => {
     // After all seeding operations are done, create materialized view
     console.log('Seeding complete. Creating materialized view.');
     execute(`
