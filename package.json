@@ -39,6 +39,7 @@
     "webpack": "^2.2.1"
   },
   "dependencies": {
+    "async": "^2.6.1",
     "aws-sdk": "^2.381.0",
     "body-parser": "^1.17.0",
     "cassandra-driver": "^4.0.0",

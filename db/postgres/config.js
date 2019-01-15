@@ -1,5 +1,5 @@
 const Sequelize = require('sequelize');
-const sequelize = new Sequelize('turash_c', 'postgres', '6042783128', {
+const sequelize = new Sequelize('turashc', 'postgres', '6042783128', {
   host: 'localhost',
   dialect: 'postgres',
   operatorsAliases: false,
