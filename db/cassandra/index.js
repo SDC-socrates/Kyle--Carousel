@@ -13,7 +13,7 @@ const execute = (queryString) => {
 
 execute(`SELECT * FROM cars WHERE car_id = 9999999;`);
 
-// Get suggested cars given a category, status, year, lat and long...
+// Get suggested cars given a category, status, year, lat and long
 
 execute(`
   SELECT * 
