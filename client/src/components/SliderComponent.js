@@ -30,9 +30,9 @@ class SliderComponent extends React.Component {
     })
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        console.log('/api/turash/images/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
+        // console.log('/api/turash/images/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
         var body = res.json();
-        console.log('/api/turash/images/similar POST RES', body);
+        // console.log('/api/turash/images/similar POST RES', body);
         return body;
       })
       .then(res => this.setState({ similar: res }));
@@ -67,10 +67,10 @@ class SliderComponent extends React.Component {
             {this.state.images
               ? this.state.images.map(
                   (image, i) =>
-                    image.url && (
+                    image[1] && (
                       <div key={i}>
                         {' '}
-                        <img src={image.url} />{' '}
+                        <img src={image[1]} />{' '}
                       </div>
                     )
                 )

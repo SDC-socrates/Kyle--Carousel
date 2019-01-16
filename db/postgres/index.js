@@ -1,23 +1,24 @@
-const sequelize = require('./config');
 const async = require('async');
+const sequelize = require('./config');
 
 
 const execute = (queryString, callback) => {
-  sequelize.query(queryString).spread((results, metadata) => {
-    console.log(results);
-    callback(null, null);
-    return (metadata);
-  });
+  sequelize.query(queryString)
+    .then((result) => {
+      callback(null, result[0]);
+    })
+    .catch((err) => {
+      callback(err, null);
+    });
 };
 
 // Get car details given a specific car id
 
-const getCar = (requestedId, callback) => {
+const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
   if (requestedId === undefined) {
     lookupId = Math.round(Math.random() * 10000000);
   }
-  console.log(lookupId);
   execute(`
   SELECT * FROM carsbycatstatuslong
     WHERE id=${lookupId}
@@ -45,8 +46,10 @@ const getSuggestedCars = (callback) => {
 };
 
 // Uncomment to test query and log execution times to file
-async.timesLimit(1, 1,
-  (iterationIndex, callback) => getCar(undefined, callback),
-  () => {
-    console.log('All queries complete.');
-  });
+// async.timesLimit(1, 1,
+//   (iterationIndex, callback) => getSpecificCar(undefined, callback),
+//   () => {
+//     console.log('All queries complete.');
+//   });
+
+module.exports = { getSpecificCar, getSuggestedCars };

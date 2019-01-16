@@ -14,12 +14,12 @@ class Carousel extends React.Component {
     targetID ? (this.state.id = targetID) : (this.state.id = 15);
 
     this.getCarById(this.state.id).then(res => {
-      // console.log('first Res', res);
+      console.log('first Res', res);
       this.setState({
         id: Number(this.props.id),
-        images: res,
-        make: res[0].make,
-        random: res[0].random
+        images: res.random,
+        make: res.make,
+        random: res.random
       });
     });
   }
