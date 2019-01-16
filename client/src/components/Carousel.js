@@ -25,11 +25,11 @@ class Carousel extends React.Component {
   }
 
   getCarById(id) {
-    return fetch(`http://localhost:3004/api/turash/images/${id}`)
+    return fetch(`http://localhost:3004/api/cars/${id}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching car by id')))
       .then(res => {
         var body = res.json();
-        console.log('/api/turash/images/${id} GET RES', body)
+        console.log('/api/cars/${id} GET RES', body)
         return body;
       });
   }
