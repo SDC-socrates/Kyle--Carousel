@@ -470,20 +470,22 @@ async.parallelLimit(asyncSeries1, 1, () => {
   async.parallelLimit(asyncSeries2, 3, () => {
     // After all seeding operations are done, create materialized view
     console.log('Seeding complete. Creating materialized view.');
-    execute(`
-    CREATE MATERIALIZED VIEW carsbycatstatuslong AS
-      SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
-        FROM cars, models, makes, categories, "carsPhotos", photos 
-        WHERE cars."modelId"=models.id 
-          AND models."makeId"=makes.id 
-          AND models."categoryId"=categories.id 
-          AND "carsPhotos"."carId"=cars.id 
-          AND photos.id="carsPhotos"."photoId"
-        ORDER BY
-          categories.name,
-          cars.status,
-          cars.long
-    `)
+    execute(`CREATE INDEX carsidindex ON "carsPhotos" ("carId");`)
+      // Then, create materialized view
+      .then(() => execute(`
+      CREATE MATERIALIZED VIEW carsbycatstatuslong AS
+        SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
+          FROM cars, models, makes, categories, "carsPhotos", photos 
+          WHERE cars."modelId"=models.id 
+            AND models."makeId"=makes.id 
+            AND models."categoryId"=categories.id 
+            AND "carsPhotos"."carId"=cars.id 
+            AND photos.id="carsPhotos"."photoId"
+          ORDER BY
+            categories.name,
+            cars.status,
+            cars.long
+      `)
       // Then, create index
       .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
       // Finally, log total time
