@@ -33,7 +33,7 @@ app.get('/api/turash/images/:id', (req, res) => {
           assert.equal(null, err);
           cars.push(doc);
         },
-        err => {
+        (err) => {
           client.close();
           res.json(cars);
         }

@@ -1,4 +1,15 @@
 const Sequelize = require('sequelize');
+const queries = require('./index');
+const fs = require('fs');
+
+let sequelizeLog = '';
+const logToSequelizeLog = (executedQuery, executionTime) => {
+  console.log(executedQuery);
+  console.log(`Executed in: ${executionTime}ms.`);
+  sequelizeLog += `${executionTime}\n`;
+  fs.writeFileSync('./queryTimes.csv', sequelizeLog);
+};
+
 const sequelize = new Sequelize('turashc', 'postgres', '6042783128', {
   host: 'localhost',
   dialect: 'postgres',
@@ -10,6 +21,7 @@ const sequelize = new Sequelize('turashc', 'postgres', '6042783128', {
     idle: 100000
   },
   benchmark: true,
+  logging: logToSequelizeLog
 });
 
 sequelize
