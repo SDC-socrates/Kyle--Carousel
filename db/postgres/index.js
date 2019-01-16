@@ -26,28 +26,32 @@ const getSpecificCar = (requestedId, callback) => {
 };
 
 // Get suggested cars given a category, status, year, lat and long
-const getSuggestedCars = (callback) => {
-  const randomLat = Math.round(Math.random() * 180 - 90);
-  const randomLong = Math.round(Math.random() * 360 - 180);
-  const randomYearRangeStart = 2000 + Math.round(Math.random() * 9);
-  const categories = ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'van', 'sports', 'electric', 'muscle'];
-  const randomCategory = categories[Math.round(Math.random() * 8)];
+const getSuggestedCars = (requestedProperties, callback) => {
+  let lookupProperties = requestedProperties;
+  if (requestedProperties === undefined) {
+    lookupProperties = {
+      long: Math.round(Math.random() * 180 - 90),
+      lat: Math.round(Math.random() * 360 - 180),
+      year: 2005 + Math.round(Math.random() * 9),
+      category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'van', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 8)]
+    };
+  }
   execute(`
   SELECT * FROM carsbycatstatuslong
-    WHERE long > ${randomLong}
-      AND long < ${randomLong + 0.5}
-      AND lat > ${randomLat}
-      AND lat < ${randomLat + 0.5}
+    WHERE long > ${lookupProperties.long}
+      AND long < ${lookupProperties.long + 0.5}
+      AND lat > ${lookupProperties.lat}
+      AND lat < ${lookupProperties.lat + 0.5}
       AND status='Active' 
-      AND category='${randomCategory}'
-      AND year>${randomYearRangeStart} 
-      AND year<${randomYearRangeStart + 10}
+      AND category='${lookupProperties.category}'
+      AND year>${lookupProperties.year - 5} 
+      AND year<${lookupProperties.year + 5}
   `, callback);
 };
 
 // Uncomment to test query and log execution times to file
 // async.timesLimit(1, 1,
-//   (iterationIndex, callback) => getSpecificCar(undefined, callback),
+//   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
 //   () => {
 //     console.log('All queries complete.');
 //   });

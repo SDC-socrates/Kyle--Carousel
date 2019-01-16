@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 // app.use('/', express.static('client/public'));
 app.listen(port, () => console.log(`Server connected and listening on ${port}!`));
 
-app.get('/api/turash/images/:id', (req, res) => {
+app.get('/api/cars/:id', (req, res) => {
   controllers.getSpecificCar(req.params.id, (err, results) => {
     if (err) {
       console.log(err);
@@ -30,7 +30,7 @@ app.get('/api/turash/images/:id', (req, res) => {
   });
 });
 
-app.post(`/api/turash/images/similar`, (req, res) => {
+app.get(`/api/cars/similar`, (req, res) => {
   const make = [];
   console.log('MAKE', req.body);
   client.connect(

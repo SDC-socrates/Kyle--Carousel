@@ -21,7 +21,7 @@ class SliderComponent extends React.Component {
 
   //get similar cars for second  carousel
   getSimilarCarsByMake(type, limit) {
-    return fetch(`http://localhost:3004/api/turash/images/similar`, {
+    return fetch(`http://localhost:3004/api/cars/similar`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -30,9 +30,9 @@ class SliderComponent extends React.Component {
     })
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        // console.log('/api/turash/images/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
+        // console.log('/api/cars/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
         var body = res.json();
-        // console.log('/api/turash/images/similar POST RES', body);
+        // console.log('/api/cars/similar POST RES', body);
         return body;
       })
       .then(res => this.setState({ similar: res }));

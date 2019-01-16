@@ -14,4 +14,16 @@ const getSpecificCar = (carId, callback) => {
   });
 };
 
-module.exports = { getSpecificCar };
+const getSuggestedCars = (requestedProperties, callback) => {
+  db.getSuggestedCars(requestedProperties, (err, results) => {
+    // Transform data to client expected shape
+    const output = {
+      id: results[0].id,
+      make: `${results[0].make} ${results[0].model} ${results[0].year}`,
+      thumb: imageRootURL + results[0].url,
+    };
+    callback(err, output);
+  });
+};
+
+module.exports = { getSpecificCar, getSuggestedCars };
