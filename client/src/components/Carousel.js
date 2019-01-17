@@ -19,7 +19,11 @@ class Carousel extends React.Component {
         id: Number(this.props.id),
         images: res.random,
         make: res.make,
-        random: res.random
+        random: res.random,
+        long: res.long,
+        lat: res.lat,
+        category: res.category,
+        year: res.year
       });
     });
   }
@@ -45,6 +49,10 @@ class Carousel extends React.Component {
             make={this.state.make}
             similar={this.state.similar}
             random={this.state.random}
+            long={this.state.long}
+            lat={this.state.long}
+            category={this.state.category}
+            year={this.state.year}
           />
         )}
       </div>

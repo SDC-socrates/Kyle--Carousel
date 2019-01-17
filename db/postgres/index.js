@@ -5,6 +5,7 @@ const sequelize = require('./config');
 const execute = (queryString, callback) => {
   sequelize.query(queryString)
     .then((result) => {
+      // console.log('SEQUELIZE QUERY RESULT:', result[0]);
       callback(null, result[0]);
     })
     .catch((err) => {
@@ -39,13 +40,14 @@ const getSuggestedCars = (requestedProperties, callback) => {
   execute(`
   SELECT * FROM carsbycatstatuslong
     WHERE long > ${lookupProperties.long}
-      AND long < ${lookupProperties.long + 0.5}
+      AND long < ${lookupProperties.long + 2}
       AND lat > ${lookupProperties.lat}
-      AND lat < ${lookupProperties.lat + 0.5}
+      AND lat < ${lookupProperties.lat + 2}
       AND status='Active' 
       AND category='${lookupProperties.category}'
       AND year>${lookupProperties.year - 5} 
       AND year<${lookupProperties.year + 5}
+    LIMIT 18
   `, callback);
 };
 

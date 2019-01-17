@@ -11,26 +11,27 @@ class SliderComponent extends React.Component {
       activeSlide2: 0,
       random: this.props.random
     };
-    this.getSimilarCarsByMake = this.getSimilarCarsByMake.bind(this);
+    this.getSuggestedCars = this.getSuggestedCars.bind(this);
   }
 
   componentDidMount() {
     // console.log(this.props.make);
-    this.getSimilarCarsByMake(this.props.make, 7);
+    const search = {
+      long: this.props.long,
+      lat: this.props.lat,
+      year: this.props.year,
+      category: this.props.category
+    }
+    this.getSuggestedCars(search);
   }
 
-  //get similar cars for second  carousel
-  getSimilarCarsByMake(type, limit) {
-    return fetch(`http://localhost:3004/api/cars/similar`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ make: type, limit: limit })
-    })
+  //get similar cars for second carousel
+  getSuggestedCars({long, lat, year, category}) {
+    console.log(long, lat, year, category);
+    return fetch(`http://localhost:3004/api/cars?long=${long}&lat=${lat}&year=${year}&category=${category}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        // console.log('/api/cars/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
+        console.log(res);
         var body = res.json();
         // console.log('/api/cars/similar POST RES', body);
         return body;
