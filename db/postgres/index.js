@@ -40,9 +40,9 @@ const getSuggestedCars = (requestedProperties, callback) => {
   execute(`
   SELECT * FROM carsbycatstatuslong
     WHERE long > ${lookupProperties.long}
-      AND long < ${lookupProperties.long + 2}
+      AND long < ${lookupProperties.long + 5}
       AND lat > ${lookupProperties.lat}
-      AND lat < ${lookupProperties.lat + 2}
+      AND lat < ${lookupProperties.lat + 5}
       AND status='Active' 
       AND category='${lookupProperties.category}'
       AND year>${lookupProperties.year - 5} 

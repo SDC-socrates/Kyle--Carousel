@@ -88,7 +88,7 @@ class SliderComponent extends React.Component {
                 <div className="similarSlide" key={i}>
                   <a
                     href={`${window.location.pathname.split('/')[0]}/${
-                      similarCar.thumb.split('/')[4]
+                      similarCar.id
                     }/`}
                   >
                     <img src={similarCar.thumb} />
@@ -97,23 +97,6 @@ class SliderComponent extends React.Component {
                         <h2>
                           {similarCar.make.charAt(0).toUpperCase() + similarCar.make.substr(1)}
                         </h2>
-                      </div>
-                    </span>
-                  </a>
-                </div>
-              ))}
-            {this.state.random &&
-              this.state.random.map((randomCar, i) => (
-                <div className="similarSlide" key={i}>
-                  <a
-                    href={`${window.location.pathname.split('/')[0]}/${
-                      randomCar[1].split('/')[4]
-                    }/`}
-                  >
-                    <img src={randomCar[1]} />
-                    <span className="carDescription">
-                      <div>
-                        <h2>{randomCar[0].charAt(0).toUpperCase() + randomCar[0].substr(1)}</h2>
                       </div>
                     </span>
                   </a>
