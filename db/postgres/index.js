@@ -30,7 +30,8 @@ const getSpecificCar = (requestedId, callback) => {
     lookupId = Math.round(Math.random() * 10000000);
   }
   execute(`
-  SELECT * FROM cars, models, makes, categories, "carsPhotos", photos 
+  SELECT cars.id, makes.name as make, models.name as model, models.year, cars.long, cars.lat, photos.url, categories.name as category 
+  FROM cars, models, makes, categories, "carsPhotos", photos 
     WHERE cars.id=${lookupId}
     AND cars."modelId"=models.id 
     AND models."makeId"=makes.id 
@@ -38,10 +39,6 @@ const getSpecificCar = (requestedId, callback) => {
     AND "carsPhotos"."carId"=cars.id 
     AND photos.id="carsPhotos"."photoId"
   `, callback);
-  // execute(`
-  // SELECT * FROM carsbycatstatuslong
-  //   WHERE id=${lookupId}
-  // `, callback);
 };
 
 // Insert new car into DB given a specific car id and car properties
@@ -114,16 +111,6 @@ const getSuggestedCars = (requestedProperties, callback) => {
       category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 7)], // omitted van due to seeding error
     };
   }
-  // execute(`
-  // SELECT * FROM cars, carsbycatstatuslong
-  //   WHERE cars.id = carsbycatstatuslong.id
-  //     AND cars.long > ${lookupProperties.long}
-  //     AND cars.long < ${lookupProperties.long + 5}
-  //     AND cars.lat > ${lookupProperties.lat}
-  //     AND cars.lat < ${lookupProperties.lat + 5}
-  //     AND cars.status='Active' 
-  //   LIMIT 18
-  // `, callback);
   execute(`
   SELECT cars.id, makes.name as make, models.name as model, models.year, cars.long, cars.lat, photos.url 
     FROM cars, models, makes, categories, "carsPhotos", photos 
@@ -142,25 +129,13 @@ const getSuggestedCars = (requestedProperties, callback) => {
       AND models.year<${lookupProperties.year + 5}
     LIMIT 18
   `, callback);
-  // execute(`
-  // SELECT * FROM carsbycatstatuslong
-  //   WHERE long > ${lookupProperties.long}
-  //     AND long < ${lookupProperties.long + 5}
-  //     AND lat > ${lookupProperties.lat}
-  //     AND lat < ${lookupProperties.lat + 5}
-  //     AND status='Active' 
-  //     AND category='${lookupProperties.category}'
-  //     AND year>${lookupProperties.year - 5} 
-  //     AND year<${lookupProperties.year + 5}
-  //   LIMIT 18
-  // `, callback);
 };
 
 // Uncomment to test query and log execution times to file
-async.timesLimit(1000, 1,
-  (iterationIndex, callback) => getSuggestedCars(undefined, callback),
-  () => {
-    console.log('All queries complete.');
-  });
+// async.timesLimit(1000, 1,
+//   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
+//   () => {
+//     console.log('All queries complete.');
+//   });
 
 module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };
