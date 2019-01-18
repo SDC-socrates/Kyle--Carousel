@@ -25,7 +25,7 @@ const execute = (queryString, callback) => {
 // Get car details given a specific car id
 const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
-  console.log(lookupId);
+  // If no carId is provided, lookup a random car
   if (requestedId === undefined) {
     lookupId = Math.round(Math.random() * 10000000);
   }
@@ -53,11 +53,12 @@ const postSpecificCar = (requestedId, carProps, callback) => {
   //   "lat":56.18,
   //   "images":["https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]
   //  }
-  // Lookup makeId, then lookup ModelId given name/year/makeId
+  // First lookup makeId given the make name
   db.Make.findOne({
     where: { name: carProps.make },
   })
     .then(({ dataValues }) => dataValues.id)
+    // Then lookup ModelId given name/year/makeId
     .then(makeId => db.Model.findOne({
       where: {
         name: carProps.model,
@@ -66,6 +67,7 @@ const postSpecificCar = (requestedId, carProps, callback) => {
       },
     }))
     .then(({ dataValues }) => dataValues.id)
+    // Create the car with given info plus matching modelId and makeId
     .then(modelId => db.Car.create({
       id: carProps.id,
       status: carProps.status,
@@ -73,6 +75,7 @@ const postSpecificCar = (requestedId, carProps, callback) => {
       long: carProps.long,
       modelId,
     }))
+    // Create images and link them to the newly created car
     .then(() => {
       carProps.images.forEach((url) => {
         db.Photo.create({ url })
@@ -82,7 +85,7 @@ const postSpecificCar = (requestedId, carProps, callback) => {
             photoId,
           }));
       });
-      callback(null, "Car inserted successfully into DB.")
+      callback(null, 'Car inserted successfully into DB.')
     })
     .catch((err) => {
       callback(err, null);
@@ -91,7 +94,7 @@ const postSpecificCar = (requestedId, carProps, callback) => {
 
 // Delete car from DB given a specific car id
 const deleteSpecificCar = (requestedId, callback) => {
-  // Delete car. Associated car photos will also get deleted.
+  // Delete car (associated car photos will also get deleted)
   db.Car.destroy({
     where: { id: requestedId },
   })
@@ -102,6 +105,7 @@ const deleteSpecificCar = (requestedId, callback) => {
 // Get suggested cars given a category, status, year, lat and long
 const getSuggestedCars = (requestedProperties, callback) => {
   let lookupProperties = requestedProperties;
+  // If no specific properties are provided, perform a random lookup
   if (requestedProperties === undefined) {
     lookupProperties = {
       long: Math.round(Math.random() * 170.1 - 85.05),
