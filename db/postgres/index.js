@@ -25,6 +25,7 @@ const execute = (queryString, callback) => {
 // Get car details given a specific car id
 const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
+  console.log(lookupId);
   if (requestedId === undefined) {
     lookupId = Math.round(Math.random() * 10000000);
   }
@@ -35,14 +36,52 @@ const getSpecificCar = (requestedId, callback) => {
 };
 
 // Insert new car into DB given a specific car id and car properties
-const postSpecificCar = (requestedId, callback) => {
-  // Insert car
-  // Insert photos
-  db.Car.destroy({
-    where: { id: requestedId },
+const postSpecificCar = (requestedId, carProps, callback) => {
+  // carProps expected shape: {
+  //   "id":10000103,
+  //   "status":"Active",
+  //   "make":"Bugatti",
+  //   "model":"SP-0",
+  //   "year": 2012
+  //   "long":77.39,
+  //   "lat":56.18,
+  //   "images":["https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]
+  //  }
+
+  // Lookup makeId, then lookup ModelId given name/year/makeId
+  db.Make.findOne({
+    where: { name: carProps.make },
   })
-    .then(success => callback(null, success))
-    .catch(err => callback(err, null));
+    .then(({ dataValues }) => dataValues.id)
+    .then(makeId => db.Model.findOne({
+      where: {
+        name: carProps.model,
+        year: carProps.year,
+        makeId,
+      },
+    }))
+    .then(({ dataValues }) => dataValues.id)
+    .then(modelId => db.Car.create({
+      id: carProps.id,
+      status: carProps.status,
+      lat: carProps.lat,
+      long: carProps.long,
+      modelId,
+    }))
+    .then(() => {
+      carProps.images.forEach((url) => {
+        db.Photo.create({ url })
+          .then(({ dataValues }) => dataValues.id)
+          .then(photoId => db.CarsPhoto.create({
+            carId: carProps.id,
+            photoId,
+          }));
+      });
+      callback(null, "Car inserted successfully into DB.")
+    })
+    .catch((err) => {
+      callback(err, null);
+    });
 };
 
 // Delete car from DB given a specific car id
