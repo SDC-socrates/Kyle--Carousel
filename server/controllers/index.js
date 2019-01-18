@@ -19,16 +19,7 @@ const getSpecificCar = (carId, callback) => {
 };
 
 const postSpecificCar = (carId, carProperties, callback) => {
-  // Expected shape: {
-  //   "id":10000103,
-  //   "make":"Bugatti SP-0 2012",
-  //   "long":77.39,
-  //   "lat":56.18,
-  //   "category":"sports",
-  //   "year":2012,
-  //   "images":[["Bugatti SP-0 2012","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg"],["Bugatti SP-0 2012","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]]
-  //  }
-  // db.postSpecificCar(carId, carProperties, callback);
+  db.postSpecificCar(carId, carProperties, callback);
 };
 
 const deleteSpecificCar = (carId, callback) => {
