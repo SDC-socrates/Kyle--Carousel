@@ -22,7 +22,7 @@ app.get(/\/api\/cars\/\d+/g, (req, res) => {
   controllers.getSpecificCar(carId, (err, results) => {
     if (err) {
       console.log(err);
-      res.sendStatus(400).send(err);
+      res.status(400).send(err);
     } else {
       console.log(results);
       res.send(JSON.stringify(results));
@@ -35,10 +35,9 @@ app.post(/\/api\/cars\/\d+/g, (req, res) => {
   const carId = req.path.split('/').pop();
   controllers.postSpecificCar(carId, req.body, (err, results) => {
     if (err) {
-      console.log(err);
-      res.sendStatus(400).send(JSON.stringify(results));
+      res.status(400).send(JSON.stringify(err));
     } else {
-      console.log(results);
+      console.log('FOO2', results);
       res.send(JSON.stringify(results));
     }
   });
@@ -50,7 +49,7 @@ app.post(/\/api\/cars\/\d+/g, (req, res) => {
 //   controllers.getSpecificCar(carId, (err, results) => {
 //     if (err) {
 //       console.log(err);
-//       res.sendStatus(400).send(JSON.stringify(results));
+//       res.status(400).send(JSON.stringify(results));
 //     } else {
 //       console.log(results);
 //       res.send(JSON.stringify(results));
@@ -64,7 +63,7 @@ app.delete(/\/api\/cars\/\d+/g, (req, res) => {
   controllers.deleteSpecificCar(carId, (err, results) => {
     if (err) {
       console.log(err);
-      res.sendStatus(400).send(err);
+      res.status(400).send(err);
     } else {
       console.log(results);
       res.send(JSON.stringify(results));
@@ -81,7 +80,7 @@ app.get('/api/cars', (req, res) => {
   controllers.getSuggestedCars(requestedProperties, (err, results) => {
     if (err) {
       console.log(err);
-      res.sendStatus(400).send(err);
+      res.status(400).send(err);
     } else {
       console.log(results);
       res.send(JSON.stringify(results));
