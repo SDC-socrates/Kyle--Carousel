@@ -1,0 +1,13 @@
+# TEST PLAN
+#   1) Warm up phase
+#   2) GET request for a specific car ID
+config:
+  target: 'http://localhost:3004/api/cars'
+  phases:
+    - duration: 10
+      arrivalRate: 1
+      name: "Warm up the application"
+scenarios:
+  - flow:
+    - get:
+        url: "/16"
