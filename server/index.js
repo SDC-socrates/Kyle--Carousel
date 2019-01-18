@@ -7,6 +7,13 @@ const url = require('url');
 const controllers = require('./controllers');
 const app = express();
 const port = process.env.PORT || 3004;
+
+// For debugging purposes
+app.use((req, res, next) => {
+  console.log('NEW REQUEST RECEIVED:', req.method, req.path);
+  next();
+});
+
 app.use('/', express.static('./client/public/'));
 app.use(/\/\d+\//, express.static('./client/public/'));
 
@@ -43,19 +50,19 @@ app.post(/\/api\/cars\/\d+/g, (req, res) => {
   });
 });
 
-// app.put(/\/api\/cars\/\d+/g, (req, res) => {
-//   console.log('POST specific car.')
-//   const carId = req.path.split('/').pop();
-//   controllers.getSpecificCar(carId, (err, results) => {
-//     if (err) {
-//       console.log(err);
-//       res.status(400).send(JSON.stringify(results));
-//     } else {
-//       console.log(results);
-//       res.send(JSON.stringify(results));
-//     }
-//   });
-// });
+app.put(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('PUT specific car.')
+  const carId = req.path.split('/').pop();
+  controllers.putSpecificCar(carId, req.body, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(JSON.stringify(results));
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
+    }
+  });
+});
 
 app.delete(/\/api\/cars\/\d+/g, (req, res) => {
   console.log('DELETE specific car.')

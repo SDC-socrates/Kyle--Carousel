@@ -53,7 +53,6 @@ const postSpecificCar = (requestedId, carProps, callback) => {
   //   "lat":56.18,
   //   "images":["https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]
   //  }
-
   // Lookup makeId, then lookup ModelId given name/year/makeId
   db.Make.findOne({
     where: { name: carProps.make },
