@@ -3,7 +3,7 @@ const async = require('async');
 const fs = require('fs');
 const sequelize = require('../../db/postgres/config');
 const downloadedModels = require('../../imageSeeder/models.js');
-
+const db = require('./models.js')
 
 // ========================================================
 // CONFIGURATION
@@ -36,14 +36,14 @@ const asyncSeries2 = [];
 
 // Returns a Promise that resolves to the found category
 const getCategoryIdFromName = (name) => {
-  return Category.findOne({
+  return db.Category.findOne({
     where: { name }
   });
 };
 
 // Returns a Promise that resolves to the found make
 const getMakeIdFromName = (name) => {
-  return Make.findOne({
+  return db.Make.findOne({
     where: { name }
   });
 };
@@ -51,7 +51,7 @@ const getMakeIdFromName = (name) => {
 // Returns a Promise that resolves to the found modelId
 const getModelIdFromName = (name, make) => {
   const promise = new Promise((resolve, reject) => {
-    Model.findAll({
+    db.Model.findAll({
       where: { name },
       include: [Make]
     })
@@ -67,7 +67,7 @@ const getModelIdFromName = (name, make) => {
 
 // Returns a Promise that resolves to the found cars with model, make and category
 const getCarsFromModelId = (modelId) => {
-  return Car.findAll({
+  return db.Car.findAll({
     where: { modelId },
   });
 };
@@ -113,7 +113,7 @@ const loadCarsToDB = (modelId) => {
       modelId,
     });
   }
-  return Car.bulkCreate(carsToDB);
+  return db.Car.bulkCreate(carsToDB);
 };
 
 // Creates a CarsPhoto record for each car given a modelId and photo id
@@ -124,7 +124,7 @@ const attachPhotosToCars = (modelId, photoId) => {
   for (var carId = carIdStart; carId <= carIdEnd; carId++) {
     carPhotosToDB.push({ carId, photoId });
   }
-  return CarsPhoto.bulkCreate(carPhotosToDB);
+  return db.CarsPhoto.bulkCreate(carPhotosToDB);
 };
 
 // Executes raw queries
@@ -135,21 +135,6 @@ const execute = (queryString) => {
 // ========================================================
 // CATEGORIES
 // ========================================================
-
-// Define schema for Categories in DB
-const Category = sequelize.define('category', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
 
 // Identify categories from downloadedModels object
 const categories = Object.keys(downloadedModels);
@@ -162,8 +147,8 @@ categories.forEach((category) => {
 
 // Queue up operations to write categories to DB
 asyncSeries1.push((callback) => {
-  Category.sync({ force: dropExistingTables })
-    .then(() => Category.bulkCreate(categoriesToDB))
+  db.Category.sync({ force: dropExistingTables })
+    .then(() => db.Category.bulkCreate(categoriesToDB))
     // Using async, kickoff the next operation after this one is done
     .then(() => callback(null, null));
 });
@@ -171,21 +156,6 @@ asyncSeries1.push((callback) => {
 // ========================================================
 // MAKES
 // ========================================================
-
-// Define schema for Makes in DB
-const Make = sequelize.define('make', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
 
 // Identify makes from models
 const makes = new Set();
@@ -203,8 +173,8 @@ makes.forEach((make) => {
 
 // Queue up operations to write makes to DB
 asyncSeries1.push((callback) => {
-  Make.sync({ force: dropExistingTables })
-    .then(() => Make.bulkCreate(makesToDB))
+  db.Make.sync({ force: dropExistingTables })
+    .then(() => db.Make.bulkCreate(makesToDB))
     // Using async, kickoff the next operation after this one is done
     .then(() => callback(null, null));
 });
@@ -213,33 +183,6 @@ asyncSeries1.push((callback) => {
 // ========================================================
 // MODELS
 // ========================================================
-
-
-// Define schema for Models in DB
-const Model = sequelize.define('model', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-  year: {
-    type: Sequelize.INTEGER,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
-
-Model.belongsTo(Make);
-Make.hasMany(Model);
-Model.belongsTo(Category);
-Category.hasMany(Model);
-
-Model.hash = {};
-
 
 // Create bulk upload compatabile data object
 const modelsToDB = [];
@@ -276,7 +219,7 @@ images.forEach((image) => {
                 // Push the model object to array for bulkCreate
                 modelsToDB.push(modelToDB);
                 // Store model name to id lookup for offline reference
-                Model.hash[make + modelToDB.name] = modelToDB.id;
+                db.Model.hash[make + modelToDB.name] = modelToDB.id;
                 modelCount += 1;
                 // Using async, kickoff the next operation after this one is done
                 callback(null, null);
@@ -289,8 +232,8 @@ images.forEach((image) => {
 
 // Queue up operations to write models to DB
 asyncSeries1.push((callback) => {
-  Model.sync({ force: dropExistingTables })
-    .then(() => Model.bulkCreate(modelsToDB))
+  db.Model.sync({ force: dropExistingTables })
+    .then(() => db.Model.bulkCreate(modelsToDB))
     // Queue up operations to write cars to DB
     .then(() => queueCars())
     // Using async, kickoff the next operation after this one is done
@@ -301,21 +244,6 @@ asyncSeries1.push((callback) => {
 // ========================================================
 // PHOTOS
 // ========================================================
-
-// Define schema for Photos in DB
-const Photo = sequelize.define('photo', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  url: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
 
 // Create bulk upload compatible data object
 const photosToDB = [];
@@ -328,9 +256,9 @@ images.forEach((imageKey) => {
 // Queue up operations to write photos to DB
 let photos;
 asyncSeries1.push((callback) => {
-  Photo.sync({ force: dropExistingTables })
-    .then(() => Photo.bulkCreate(photosToDB))
-    .then(() => Photo.findAll({}))
+  db.Photo.sync({ force: dropExistingTables })
+    .then(() => db.Photo.bulkCreate(photosToDB))
+    .then(() => db.Photo.findAll({}))
     .then((photosFromDB) => {
       // Store list of photos for reference and add carPhotos seeding to queue
       photos = photosFromDB;
@@ -342,66 +270,14 @@ asyncSeries1.push((callback) => {
 
 
 // ========================================================
-// CARS - DEFINE SCHEMA
-// ========================================================
-
-// Define schema for Cars in DB
-const Car = sequelize.define('car', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  status: {
-    type: Sequelize.STRING,
-  },
-  lat: {
-    type: Sequelize.FLOAT,
-  },
-  long: {
-    type: Sequelize.FLOAT,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
-
-Car.belongsTo(Model);
-Model.hasMany(Car);
-
-
-// ========================================================
-// CARSPHOTOS - DEFINE SCHEMA
-// ========================================================
-
-
-// Define schema for carsPhoto in DB
-const CarsPhoto = sequelize.define('carsPhoto', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
-
-CarsPhoto.belongsTo(Car);
-CarsPhoto.belongsTo(Photo);
-Car.hasMany(CarsPhoto);
-Photo.hasMany(CarsPhoto);
-
-
-// ========================================================
 // CARS AND CARSPHOTOS - SEED DB
 // ========================================================
 
 
 // Create tables in DB
 asyncSeries1.push((callback) => {
-  Car.sync({ force: dropExistingTables })
-    .then(() => CarsPhoto.sync({ force: dropExistingTables }))
+  db.Car.sync({ force: dropExistingTables })
+    .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
     .then(() => callback(null, null));
 });
 
@@ -448,8 +324,8 @@ const queueCarPhotos = () => {
         timeStart = Date.now(); 
       }
       console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch ${batch}/${photos.length}`);
-      // console.log(photo, Model.hash[make + modelName], photo.dataValues.id);
-      attachPhotosToCars(Model.hash[make + modelName], photo.dataValues.id)
+      // console.log(photo, db.Model.hash[make + modelName], photo.dataValues.id);
+      attachPhotosToCars(db.Model.hash[make + modelName], photo.dataValues.id)
         .then(() => {
           // Log key info about the seed operation
           const timeNow = Date.now();

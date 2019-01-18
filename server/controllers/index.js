@@ -18,6 +18,10 @@ const getSpecificCar = (carId, callback) => {
   });
 };
 
+const deleteSpecificCar = (carId, callback) => {
+  db.deleteSpecificCar(carId, callback);
+};
+
 const getSuggestedCars = (requestedProperties, callback) => {
   db.getSuggestedCars(requestedProperties, (err, results) => {
     // Transform data to client expected shape
@@ -34,4 +38,4 @@ const getSuggestedCars = (requestedProperties, callback) => {
   });
 };
 
-module.exports = { getSpecificCar, getSuggestedCars };
+module.exports = { getSpecificCar, deleteSpecificCar, getSuggestedCars };
