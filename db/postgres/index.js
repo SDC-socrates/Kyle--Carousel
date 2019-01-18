@@ -2,6 +2,10 @@ const async = require('async');
 const sequelize = require('./config');
 const db = require('../../seeds/postgres/models');
 
+// ========================================================
+// HELPER FUNCTIONS
+// ========================================================
+
 const execute = (queryString, callback) => {
   sequelize.query(queryString)
     .then((result) => {
@@ -12,6 +16,11 @@ const execute = (queryString, callback) => {
       callback(err, null);
     });
 };
+
+
+// ========================================================
+// DATABASE OPERATIONS
+// ========================================================
 
 // Get car details given a specific car id
 const getSpecificCar = (requestedId, callback) => {
@@ -25,7 +34,18 @@ const getSpecificCar = (requestedId, callback) => {
   `, callback);
 };
 
-// Delete car fro DB given a specific car id
+// Insert new car into DB given a specific car id and car properties
+const postSpecificCar = (requestedId, callback) => {
+  // Insert car
+  // Insert photos
+  db.Car.destroy({
+    where: { id: requestedId },
+  })
+    .then(success => callback(null, success))
+    .catch(err => callback(err, null));
+};
+
+// Delete car from DB given a specific car id
 const deleteSpecificCar = (requestedId, callback) => {
   // Delete car. Associated car photos will also get deleted.
   db.Car.destroy({
@@ -67,4 +87,4 @@ const getSuggestedCars = (requestedProperties, callback) => {
 //     console.log('All queries complete.');
 //   });
 
-module.exports = { getSpecificCar, deleteSpecificCar, getSuggestedCars };
+module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };

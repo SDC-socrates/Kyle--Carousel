@@ -11,11 +11,24 @@ const getSpecificCar = (carId, callback) => {
       lat: results[0].lat,
       category: results[0].category,
       year: results[0].year,
-      random: [],
+      images: [],
     };
-    results.forEach(item => output.random.push([`${item.make} ${item.model} ${item.year}`, imageRootURL + item.url]));
+    results.forEach(item => output.images.push([`${item.make} ${item.model} ${item.year}`, imageRootURL + item.url]));
     callback(err, output);
   });
+};
+
+const postSpecificCar = (carId, carProperties, callback) => {
+  // Expected shape: {
+  //   "id":10000103,
+  //   "make":"Bugatti SP-0 2012",
+  //   "long":77.39,
+  //   "lat":56.18,
+  //   "category":"sports",
+  //   "year":2012,
+  //   "images":[["Bugatti SP-0 2012","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg"],["Bugatti SP-0 2012","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]]
+  //  }
+  // db.postSpecificCar(carId, carProperties, callback);
 };
 
 const deleteSpecificCar = (carId, callback) => {
@@ -38,4 +51,4 @@ const getSuggestedCars = (requestedProperties, callback) => {
   });
 };
 
-module.exports = { getSpecificCar, deleteSpecificCar, getSuggestedCars };
+module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };
