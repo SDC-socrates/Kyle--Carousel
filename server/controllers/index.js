@@ -22,6 +22,34 @@ const postSpecificCar = (carId, carProperties, callback) => {
   db.postSpecificCar(carId, carProperties, callback);
 };
 
+const putSpecificCar = (carId, carProperties, callback) => {
+  const output = {
+    successes: [],
+    errors: [],
+  };
+  // Delete the specified car
+  db.deleteSpecificCar(carId, (errDelete, resultsDelete) => {
+    if (errDelete) {
+      output.errors.push(errDelete);
+    } else {
+      output.successes.push(resultsDelete);
+      // Then, insert a new car with the provided info
+      db.postSpecificCar(carId, carProperties, (errPost, resultsPost) => {
+        if (errPost) {
+          output.errors.push(errPost);
+        } else {
+          output.successes.push(resultsPost);
+          if (output.errors.length > 0) {
+            callback(output, null);
+          } else {
+            callback(null, output);
+          }
+        }
+      });
+    }
+  });
+};
+
 const deleteSpecificCar = (carId, callback) => {
   db.deleteSpecificCar(carId, callback);
 };
@@ -43,4 +71,4 @@ const getSuggestedCars = (requestedProperties, callback) => {
   });
 };
 
-module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };
+module.exports = { getSpecificCar, postSpecificCar, putSpecificCar, deleteSpecificCar, getSuggestedCars };
