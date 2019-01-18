@@ -17,16 +17,57 @@ app.use(bodyParser.json());
 app.listen(port, () => console.log(`Server connected and listening on ${port}!`));
 
 app.get(/\/api\/cars\/\d+/g, (req, res) => {
-  console.log('Route triggered for getting specific car.')
-  // FIX ME - PULL ID FROM ROUTE
+  console.log('GET specific car.')
   const carId = req.path.split('/').pop();
   controllers.getSpecificCar(carId, (err, results) => {
     if (err) {
       console.log(err);
-      res.status(400).send(results);
+      res.sendStatus(400).send(err);
     } else {
       console.log(results);
-      res.send(results);
+      res.send(JSON.stringify(results));
+    }
+  });
+});
+
+// app.post(/\/api\/cars\/\d+/g, (req, res) => {
+//   console.log('POST specific car.')
+//   const carId = req.path.split('/').pop();
+//   controllers.getSpecificCar(carId, (err, results) => {
+//     if (err) {
+//       console.log(err);
+//       res.sendStatus(400).send(JSON.stringify(results));
+//     } else {
+//       console.log(results);
+//       res.send(JSON.stringify(results));
+//     }
+//   });
+// });
+
+// app.put(/\/api\/cars\/\d+/g, (req, res) => {
+//   console.log('POST specific car.')
+//   const carId = req.path.split('/').pop();
+//   controllers.getSpecificCar(carId, (err, results) => {
+//     if (err) {
+//       console.log(err);
+//       res.sendStatus(400).send(JSON.stringify(results));
+//     } else {
+//       console.log(results);
+//       res.send(JSON.stringify(results));
+//     }
+//   });
+// });
+
+app.delete(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('DELETE specific car.')
+  const carId = req.path.split('/').pop();
+  controllers.deleteSpecificCar(carId, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.sendStatus(400).send(err);
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
     }
   });
 });
@@ -40,10 +81,10 @@ app.get('/api/cars', (req, res) => {
   controllers.getSuggestedCars(requestedProperties, (err, results) => {
     if (err) {
       console.log(err);
-      res.status(400).send(results);
+      res.sendStatus(400).send(err);
     } else {
-      console.log('all results', results);
-      res.send(results);
+      console.log(results);
+      res.send(JSON.stringify(results));
     }
   });
 });

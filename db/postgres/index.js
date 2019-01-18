@@ -1,11 +1,11 @@
 const async = require('async');
 const sequelize = require('./config');
-
+const db = require('../../seeds/postgres/models');
 
 const execute = (queryString, callback) => {
   sequelize.query(queryString)
     .then((result) => {
-      // console.log('SEQUELIZE QUERY RESULT:', result[0]);
+      console.log(result[0]);
       callback(null, result[0]);
     })
     .catch((err) => {
@@ -14,7 +14,6 @@ const execute = (queryString, callback) => {
 };
 
 // Get car details given a specific car id
-
 const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
   if (requestedId === undefined) {
@@ -26,15 +25,25 @@ const getSpecificCar = (requestedId, callback) => {
   `, callback);
 };
 
+// Delete car fro DB given a specific car id
+const deleteSpecificCar = (requestedId, callback) => {
+  // Delete car. Associated car photos will also get deleted.
+  db.Car.destroy({
+    where: { id: requestedId },
+  })
+    .then(success => callback(null, success))
+    .catch(err => callback(err, null));
+};
+
 // Get suggested cars given a category, status, year, lat and long
 const getSuggestedCars = (requestedProperties, callback) => {
   let lookupProperties = requestedProperties;
   if (requestedProperties === undefined) {
     lookupProperties = {
-      long: Math.round(Math.random() * 180 - 90),
+      long: Math.round(Math.random() * 170.1 - 85.05),
       lat: Math.round(Math.random() * 360 - 180),
       year: 2005 + Math.round(Math.random() * 9),
-      category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'van', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 8)]
+      category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 7)], // omitted van due to seeding error
     };
   }
   execute(`
@@ -52,10 +61,10 @@ const getSuggestedCars = (requestedProperties, callback) => {
 };
 
 // Uncomment to test query and log execution times to file
-// async.timesLimit(1, 1,
+// async.timesLimit(1000, 1,
 //   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
 //   () => {
 //     console.log('All queries complete.');
 //   });
 
-module.exports = { getSpecificCar, getSuggestedCars };
+module.exports = { getSpecificCar, deleteSpecificCar, getSuggestedCars };
