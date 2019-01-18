@@ -7,9 +7,10 @@ const db = require('../../seeds/postgres/models');
 // ========================================================
 
 const execute = (queryString, callback) => {
+  console.log('DB queryString: ',queryString);
   sequelize.query(queryString)
     .then((result) => {
-      console.log(result[0]);
+      console.log('DB Result: ', result[0]);
       callback(null, result[0]);
     })
     .catch((err) => {
@@ -130,7 +131,7 @@ const getSuggestedCars = (requestedProperties, callback) => {
       AND categories.name='${lookupProperties.category}'
       AND models.year>${lookupProperties.year - 5} 
       AND models.year<${lookupProperties.year + 5}
-    LIMIT 18
+    LIMIT 18;
   `, callback);
 };
 

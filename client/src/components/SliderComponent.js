@@ -15,7 +15,6 @@ class SliderComponent extends React.Component {
   }
 
   componentDidMount() {
-    // console.log(this.props.make);
     const search = {
       long: this.props.long,
       lat: this.props.lat,
@@ -27,20 +26,16 @@ class SliderComponent extends React.Component {
 
   //get similar cars for second carousel
   getSuggestedCars({long, lat, year, category}) {
-    console.log(long, lat, year, category);
     return fetch(`http://localhost:3004/api/cars?long=${long}&lat=${lat}&year=${year}&category=${category}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        console.log(res);
         var body = res.json();
-        // console.log('/api/cars/similar POST RES', body);
         return body;
       })
       .then(res => this.setState({ similar: res }));
   }
 
   render() {
-    // console.log('SIMILAR', this.state.similar);
     const settings = {
       dots: false,
       infinite: true,

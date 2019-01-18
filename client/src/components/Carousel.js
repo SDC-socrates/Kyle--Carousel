@@ -14,7 +14,6 @@ class Carousel extends React.Component {
     targetID ? (this.state.id = targetID) : (this.state.id = 15);
 
     this.getCarById(this.state.id).then(res => {
-      console.log('first Res', res);
       this.setState({
         id: Number(this.props.id),
         images: res.images,
@@ -33,7 +32,6 @@ class Carousel extends React.Component {
       .then(res => (res.ok ? res : new Error('ERROR fetching car by id')))
       .then(res => {
         var body = res.json();
-        console.log('/api/cars/${id} GET RES', body)
         return body;
       });
   }
