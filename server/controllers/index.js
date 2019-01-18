@@ -38,6 +38,7 @@ const getSuggestedCars = (requestedProperties, callback) => {
         thumb: imageRootURL + car.url
       };
     }
+    console.log('RESULTS', Object.values(suggestedCars));
     callback(err, Object.values(suggestedCars));
   });
 };
