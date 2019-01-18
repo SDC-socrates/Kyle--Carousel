@@ -9,7 +9,7 @@ class SliderComponent extends React.Component {
       images: this.props.images,
       activeSlide: 0,
       activeSlide2: 0,
-      random: this.props.random
+      random: this.props.images
     };
     this.getSuggestedCars = this.getSuggestedCars.bind(this);
   }

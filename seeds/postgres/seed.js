@@ -8,6 +8,7 @@ const db = require('./models.js')
 // ========================================================
 // CONFIGURATION
 // ========================================================
+
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;

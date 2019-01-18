@@ -17,9 +17,9 @@ class Carousel extends React.Component {
       console.log('first Res', res);
       this.setState({
         id: Number(this.props.id),
-        images: res.random,
+        images: res.images,
         make: res.make,
-        random: res.random,
+        random: res.images,
         long: res.long,
         lat: res.lat,
         category: res.category,
@@ -48,7 +48,7 @@ class Carousel extends React.Component {
             id={this.state.id}
             make={this.state.make}
             similar={this.state.similar}
-            random={this.state.random}
+            random={this.state.images}
             long={this.state.long}
             lat={this.state.long}
             category={this.state.category}

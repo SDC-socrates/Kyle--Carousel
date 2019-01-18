@@ -30,19 +30,19 @@ app.get(/\/api\/cars\/\d+/g, (req, res) => {
   });
 });
 
-// app.post(/\/api\/cars\/\d+/g, (req, res) => {
-//   console.log('POST specific car.')
-//   const carId = req.path.split('/').pop();
-//   controllers.getSpecificCar(carId, (err, results) => {
-//     if (err) {
-//       console.log(err);
-//       res.sendStatus(400).send(JSON.stringify(results));
-//     } else {
-//       console.log(results);
-//       res.send(JSON.stringify(results));
-//     }
-//   });
-// });
+app.post(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('POST specific car:', req.body);
+  const carId = req.path.split('/').pop();
+  controllers.postSpecificCar(carId, req.body, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.sendStatus(400).send(JSON.stringify(results));
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
+    }
+  });
+});
 
 // app.put(/\/api\/cars\/\d+/g, (req, res) => {
 //   console.log('POST specific car.')
