@@ -1,8 +1,8 @@
 /* eslint-disable no-loop-func */
 const cassandra = require('cassandra-driver');
-const client = require('./config.js');
+const client = require('../../db/cassandra/config.js')
 const createTables = require('./createTables.js');
-const seedHelpers = require('../seedHelpers.js');
+const seedHelpers = require('./seedHelpers.js');
 
 
 // ========================================================
@@ -23,7 +23,7 @@ let queries = [];
 // Define a template for each query in the batch query statement
 const queryTemplate = {
   query: `
-    INSERT INTO carsByStatusAndCategory 
+    INSERT INTO carsstatcatlat 
       (car_id, status, category, make, model, year, lat, long, photos)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
@@ -71,10 +71,10 @@ createTables.then(() => {
         client.batch(queries, queryOptions, (err) => {
           if (err) { console.log(err); }
           // Log key info about the seed operation
-          let timeNow = Date.now();
-          let minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
-          let averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
-          let estimatedTimeRemaining = ((totalBatches - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
+          const timeNow = Date.now();
+          const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
+          const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
+          const estimatedTimeRemaining = ((totalBatches - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
           console.log(`Data updated on cluster. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
           resolve('Done');
         });

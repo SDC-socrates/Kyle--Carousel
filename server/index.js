@@ -1,13 +1,19 @@
 /* eslint-disable no-console */
 const mongodb = require('mongodb');
-const assert = require('assert');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const url = require('url');
+const controllers = require('./controllers');
 const app = express();
-const url = 'mongodb://localhost:27017';
-const client = mongodb.MongoClient;
 const port = process.env.PORT || 3004;
+
+// For debugging purposes
+app.use((req, res, next) => {
+  console.log('NEW REQUEST RECEIVED:', req.method, req.path);
+  next();
+});
+
 app.use('/', express.static('./client/public/'));
 app.use(/\/\d+\//, express.static('./client/public/'));
 
@@ -17,71 +23,74 @@ app.use(bodyParser.json());
 // app.use('/', express.static('client/public'));
 app.listen(port, () => console.log(`Server connected and listening on ${port}!`));
 
-app.get('/api/turash/images/:id', (req, res) => {
-  const cars = [];
-  client.connect(
-    url,
-    (err, client) => {
-      const db = client.db('TuRash');
-      const collection = db.collection('testData');
-      const query = {
-        id: Number(req.params.id)
-      };
-      const cursor = collection.find(query);
-      cursor.forEach(
-        (doc, err) => {
-          assert.equal(null, err);
-          cars.push(doc);
-        },
-        err => {
-          client.close();
-          res.json(cars);
-        }
-      );
+app.get(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('GET specific car.')
+  const carId = req.path.split('/').pop();
+  controllers.getSpecificCar(carId, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(err);
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
     }
-  );
+  });
 });
 
-app.post(`/api/turash/images/similar`, (req, res) => {
-  const make = [];
-  console.log('MAKE', req.body);
-  client.connect(
-    url,
-    (err, client) => {
-      const db = client.db('TuRash');
-      const collection = db.collection('testData');
-      const query = [
-        {
-          $match: {
-            make: req.body.make
-          }
-        },
-        {
-          $match: {
-            thumb: {
-              $type: 'string'
-            }
-          }
-        },
-        {
-          $sample: {
-            size: req.body.limit
-          }
-        }
-      ];
-      const cursor = collection.aggregate(query);
-      cursor.forEach(
-        (doc, err) => {
-          assert.equal(null, err);
-          console.log('DOC', doc);
-          make.push(doc);
-        },
-        err => {
-          client.close();
-          res.json(make);
-        }
-      );
+app.post(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('POST specific car:', req.body);
+  const carId = req.path.split('/').pop();
+  controllers.postSpecificCar(carId, req.body, (err, results) => {
+    if (err) {
+      res.status(400).send(JSON.stringify(err));
+    } else {
+      console.log('FOO2', results);
+      res.send(JSON.stringify(results));
     }
-  );
-  console.log(make);
+  });
+});
+
+app.put(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('PUT specific car.')
+  const carId = req.path.split('/').pop();
+  controllers.putSpecificCar(carId, req.body, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(JSON.stringify(results));
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
+    }
+  });
+});
+
+app.delete(/\/api\/cars\/\d+/g, (req, res) => {
+  console.log('DELETE specific car.')
+  const carId = req.path.split('/').pop();
+  controllers.deleteSpecificCar(carId, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(err);
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
+    }
+  });
+});
+
+app.get('/api/cars', (req, res) => {
+  console.log('Route triggered for getting suggested cars.')
+  const requestedProperties = url.parse(req.url, true).query;
+  requestedProperties.long = Number.parseInt(requestedProperties.long, 10);
+  requestedProperties.lat = Number.parseInt(requestedProperties.lat, 10);
+  requestedProperties.year = Number.parseInt(requestedProperties.year, 10);
+  controllers.getSuggestedCars(requestedProperties, (err, results) => {
+    if (err) {
+      console.log(err);
+      res.status(400).send(err);
+    } else {
+      console.log(results);
+      res.send(JSON.stringify(results));
+    }
+  });
 });

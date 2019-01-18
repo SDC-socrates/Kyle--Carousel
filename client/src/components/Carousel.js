@@ -14,22 +14,26 @@ class Carousel extends React.Component {
     targetID ? (this.state.id = targetID) : (this.state.id = 15);
 
     this.getCarById(this.state.id).then(res => {
-      // console.log('first Res', res);
+      console.log('first Res', res);
       this.setState({
         id: Number(this.props.id),
-        images: res,
-        make: res[0].make,
-        random: res[0].random
+        images: res.images,
+        make: res.make,
+        random: res.images,
+        long: res.long,
+        lat: res.lat,
+        category: res.category,
+        year: res.year
       });
     });
   }
 
   getCarById(id) {
-    return fetch(`http://localhost:3004/api/turash/images/${id}`)
+    return fetch(`http://localhost:3004/api/cars/${id}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching car by id')))
       .then(res => {
         var body = res.json();
-        console.log('/api/turash/images/${id} GET RES', body)
+        console.log('/api/cars/${id} GET RES', body)
         return body;
       });
   }
@@ -44,7 +48,11 @@ class Carousel extends React.Component {
             id={this.state.id}
             make={this.state.make}
             similar={this.state.similar}
-            random={this.state.random}
+            random={this.state.images}
+            long={this.state.long}
+            lat={this.state.long}
+            category={this.state.category}
+            year={this.state.year}
           />
         )}
       </div>
