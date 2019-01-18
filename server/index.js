@@ -34,7 +34,7 @@ const sendErrOrResults = (res, err, results) => {
   }
 };
 
-app.get(/\/api\/cars\/\d+/g, (req, res) => {
+app.get(/\/api\/cars\/\d+/, (req, res) => {
   console.log('GET specific car.')
   const carId = req.path.split('/').pop();
   controllers.getSpecificCar(carId, (err, results) => {
@@ -42,7 +42,7 @@ app.get(/\/api\/cars\/\d+/g, (req, res) => {
   });
 });
 
-app.post(/\/api\/cars\/\d+/g, (req, res) => {
+app.post(/\/api\/cars\/\d+/, (req, res) => {
   console.log('POST specific car:', req.body);
   const carId = req.path.split('/').pop();
   controllers.postSpecificCar(carId, req.body, (err, results) => {
@@ -50,7 +50,7 @@ app.post(/\/api\/cars\/\d+/g, (req, res) => {
   });
 });
 
-app.put(/\/api\/cars\/\d+/g, (req, res) => {
+app.put(/\/api\/cars\/\d+/, (req, res) => {
   console.log('PUT specific car.')
   const carId = req.path.split('/').pop();
   controllers.putSpecificCar(carId, req.body, (err, results) => {
@@ -58,7 +58,7 @@ app.put(/\/api\/cars\/\d+/g, (req, res) => {
   });
 });
 
-app.delete(/\/api\/cars\/\d+/g, (req, res) => {
+app.delete(/\/api\/cars\/\d+/, (req, res) => {
   console.log('DELETE specific car.')
   const carId = req.path.split('/').pop();
   controllers.deleteSpecificCar(carId, (err, results) => {
