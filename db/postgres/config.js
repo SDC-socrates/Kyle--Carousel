@@ -1,5 +1,4 @@
 const Sequelize = require('sequelize');
-const queries = require('./index');
 const fs = require('fs');
 
 let sequelizeLog = '';
