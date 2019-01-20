@@ -13,7 +13,7 @@ const majorCities = require('../usdmas');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 17550;
+const carsPerModel = 10;
 
 
 // ========================================================
@@ -80,7 +80,7 @@ const getCarsFromModelId = (modelId) => {
 const randomStatus = () => {
   if (Math.random() < 0.5) {
     return 'Active';
-  } return 'Retired';
+  } return 'Withheld';
 };
 
 // Returns a random major US city
@@ -291,7 +291,7 @@ asyncSeries1.push((callback) => {
     .then(() => sequelize.query('CREATE SCHEMA region'))
     .then(() => sequelize.query(`
       CREATE OR REPLACE FUNCTION
-        public.insert_trigger_table()
+        public.insert_cars_partition()
           RETURNS trigger
           LANGUAGE plpgsql
         AS $function$
@@ -305,9 +305,29 @@ asyncSeries1.push((callback) => {
         $function$;
       `))
     .then(() => sequelize.query(`
-      CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_trigger_table();
+      CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_cars_partition();
       `))
     .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
+    .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION
+        public.carsphotos_pseudo_fk_constraints()
+          RETURNS trigger
+          LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+            IF NOT EXISTS (SELECT id FROM cars WHERE id = NEW."carId") THEN
+                raise exception 'Pseudo FK error: Inserting carsPhoto for carId not found: %', NEW."carId";
+            END IF;
+            IF NOT EXISTS (SELECT id FROM photos WHERE id = NEW."photoId") THEN
+            raise exception 'Pseudo FK error: Inserting carsPhoto for photoId not found: %', NEW."photoId";
+            END IF;
+            RETURN NEW;
+        END;
+        $function$;
+      `))
+    .then(() => sequelize.query(`
+      CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
+      `))
     .then(() => callback(null, null));
 });
 
