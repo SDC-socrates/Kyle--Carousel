@@ -40,7 +40,7 @@ const carsPhotosLoadStarted = new Promise((resolve, reject) => {
 const randomStatus = () => {
   if (Math.random() < 0.5) {
     return 'Active';
-  } return 'Retired';
+  } return 'Withheld';
 };
 
 // Returns a random latitude value

@@ -138,10 +138,10 @@ const getSuggestedCars = (requestedProperties, callback) => {
 };
 
 // Uncomment to test query and log execution times to file
-async.timesLimit(1000, 1,
-  (iterationIndex, callback) => getSpecificCar(undefined, callback),
-  () => {
-    console.log('All queries complete.');
-  });
+// async.timesLimit(1000, 1,
+//   (iterationIndex, callback) => getSpecificCar(undefined, callback),
+//   () => {
+//     console.log('All queries complete.');
+//   });
 
 module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };
