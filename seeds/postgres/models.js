@@ -85,6 +85,9 @@ const Car = sequelize.define('car', {
   status: {
     type: Sequelize.STRING,
   },
+  city: {
+    type: Sequelize.STRING,
+  },
   lat: {
     type: Sequelize.FLOAT,
   },

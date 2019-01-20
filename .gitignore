@@ -7,3 +7,4 @@ imageSeeder/testUpload
 imageSeeder/upload
 imageSeeder/uploads.json
 bundle.js
+*.log

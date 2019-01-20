@@ -5,7 +5,7 @@ const fs = require('fs');
 let sequelizeLog = '';
 const logToSequelizeLog = (executedQuery, executionTime) => {
   console.log(executedQuery);
-  console.log(`Executed in: ${executionTime}ms.`);
+  console.log(`DB execution time: ${executionTime}ms.`);
   sequelizeLog += `${executionTime}\n`;
   fs.writeFileSync('./queryTimes.csv', sequelizeLog);
 };

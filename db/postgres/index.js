@@ -7,10 +7,10 @@ const db = require('../../seeds/postgres/models');
 // ========================================================
 
 const execute = (queryString, callback) => {
-  console.log('DB queryString: ',queryString);
+//  console.log('DB queryString: ',queryString);
   sequelize.query(queryString)
     .then((result) => {
-      console.log('DB Result: ', result[0]);
+//      console.log('DB Result: ', result[0]);
       callback(null, result[0]);
     })
     .catch((err) => {
@@ -28,8 +28,10 @@ const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
   // If no carId is provided, lookup a random car
   if (requestedId === undefined) {
-    lookupId = Math.round(Math.random() * 10000000);
+    lookupId = Math.round(Math.random() * 1000) + 9999000;
   }
+  // console.timeEnd('Controller to DB request');
+  // console.time('DB request to response');
   execute(`
   SELECT cars.id, makes.name as make, models.name as model, models.year, cars.long, cars.lat, photos.url, categories.name as category 
   FROM cars, models, makes, categories, "carsPhotos", photos 
@@ -136,10 +138,10 @@ const getSuggestedCars = (requestedProperties, callback) => {
 };
 
 // Uncomment to test query and log execution times to file
-// async.timesLimit(1000, 1,
-//   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
-//   () => {
-//     console.log('All queries complete.');
-//   });
+async.timesLimit(1000, 1,
+  (iterationIndex, callback) => getSpecificCar(undefined, callback),
+  () => {
+    console.log('All queries complete.');
+  });
 
 module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };
