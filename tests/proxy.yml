@@ -1,0 +1,12 @@
+config:
+  target: 'http://localhost:3005'
+  phases:
+    - duration: 3
+      arrivalRate: 300
+      name: "Primary test phase"
+  processor: "./artilleryHelper.js"
+scenarios:
+  - flow:
+    - function: "generateRandomData"
+    - get:
+        url: "/{{ carId }}/"

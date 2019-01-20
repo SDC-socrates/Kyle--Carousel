@@ -3,7 +3,8 @@ const async = require('async');
 const fs = require('fs');
 const sequelize = require('../../db/postgres/config');
 const downloadedModels = require('../../imageSeeder/models.js');
-const db = require('./models.js')
+const db = require('./models.js');
+const majorCities = require('../usdmas');
 
 // ========================================================
 // CONFIGURATION
@@ -80,15 +81,20 @@ const randomStatus = () => {
   } return 'Retired';
 };
 
-// Returns a random latitude value
-const randomLat = () => {
-  return (Math.random() * 360 - 180).toFixed(2);
-};
+// Returns a random major US city
+const randomCity = () => {
+  return majorCities[Math.floor(Math.random() * majorCities.length)];
+}
 
-// Returns a random longtitude value
-const randomLong = () => {
-  return (Math.random() * 170.1 - 85.05).toFixed(2);
-};
+// // Returns a random latitude value
+// const randomLat = () => {
+//   return (Math.random() * 360 - 180).toFixed(2);
+// };
+
+// // Returns a random longtitude value
+// const randomLong = () => {
+//   return (Math.random() * 170.1 - 85.05).toFixed(2);
+// };
 
 // Returns certain car properties inferred from the image key
 // image string format: 'category/Make/modelNumber/imageNumber.jpg'
@@ -106,11 +112,13 @@ const attrFromImgKey = (string) => {
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
   for (let i = 1; i <= carsPerModel; i++) {
+    var city = randomCity();
     carsToDB.push({
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
-      lat: randomLat(),
-      long: randomLong(),
+      city: city.city,
+      lat: (city.latitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
+      long: (city.longitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
       modelId,
     });
   }

@@ -2,7 +2,11 @@ const db = require('../../db/postgres/')
 const imageRootURL = 'https://turash-assets.s3.us-west-2.amazonaws.com/';
 
 const getSpecificCar = (carId, callback) => {
+  // console.timeEnd('Server to controller');
+  // console.time('Controller to DB request');
   db.getSpecificCar(carId, (err, results) => {
+    // console.timeEnd('DB request to response');
+    // console.time('Transform response to client shape');
     // Transform data to client expected shape
     const output = {
       id: results[0].id,
@@ -14,6 +18,8 @@ const getSpecificCar = (carId, callback) => {
       images: [],
     };
     results.forEach(item => output.images.push([`${item.make} ${item.model} ${item.year}`, imageRootURL + item.url]));
+    // console.timeEnd('Transform response to client shape');
+    // console.time('Pass client data to respond');
     callback(err, output);
   });
 };
@@ -66,7 +72,7 @@ const getSuggestedCars = (requestedProperties, callback) => {
         thumb: imageRootURL + car.url
       };
     }
-    console.log('RESULTS', Object.values(suggestedCars));
+//    console.log('RESULTS', Object.values(suggestedCars));
     callback(err, Object.values(suggestedCars));
   });
 };
