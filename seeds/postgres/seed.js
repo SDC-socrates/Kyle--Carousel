@@ -32,9 +32,11 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 const asyncSeries1 = [];
 const asyncSeries2 = [];
 
+
 // ========================================================
 // HELPER FUNCTIONS
 // ========================================================
+
 
 // Returns a Promise that resolves to the found category
 const getCategoryIdFromName = (name) => {
@@ -116,7 +118,7 @@ const loadCarsToDB = (modelId) => {
     carsToDB.push({
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
-      city: city.city,
+      city: city.city.toLowerCase(),
       lat: (city.latitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
       long: (city.longitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
       modelId,
@@ -286,8 +288,56 @@ asyncSeries1.push((callback) => {
 // Create tables in DB
 asyncSeries1.push((callback) => {
   db.Car.sync({ force: dropExistingTables })
+    .then(() => sequelize.query('CREATE SCHEMA region'))
+    .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION
+        public.insert_trigger_table()
+          RETURNS trigger
+          LANGUAGE plpgsql
+        AS $function$
+        BEGIN
+            IF NEW.city IS NOT NULL THEN
+                raise notice 'city: %', NEW.city;
+                EXECUTE 'INSERT INTO ' || concat('region.',NEW.city)::regclass || ' VALUES ($1.*)' USING NEW;
+                RETURN NULL;
+            END IF;
+        END;
+        $function$;
+      `))
+    .then(() => sequelize.query(`
+      CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_trigger_table();
+      `))
     .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
     .then(() => callback(null, null));
+});
+
+majorCities.forEach((city) => {
+  asyncSeries1.push((callback) => {
+    const cityName = city.city.toLowerCase();
+    sequelize.query(`
+      CREATE TABLE region.${cityName} (
+        id integer DEFAULT nextval('public.cars_id_seq'::regclass),
+        status character varying(255) COLLATE pg_catalog."default",
+        city character varying(255) COLLATE pg_catalog."default",
+        lat double precision,
+        "long" double precision,
+        "modelId" integer,
+        CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
+            REFERENCES public.models (id) MATCH SIMPLE
+            ON UPDATE CASCADE
+            ON DELETE SET NULL
+        )
+      INHERITS (public.cars);
+      `)
+      .then(() => sequelize.query(`
+        ALTER TABLE ONLY region.${cityName}
+          ADD CONSTRAINT ${cityName}_pkey PRIMARY KEY (id);
+        `))
+      .then(() => sequelize.query(`
+        ALTER TABLE region.${cityName} ADD CONSTRAINT ${cityName}_city CHECK (city = '${cityName}');
+        `))
+      .then(() => callback(null, null));
+  });
 });
 
 // Once models are loaded, for each model, load a batch of cars into the DB
@@ -314,7 +364,7 @@ const queueCars = () => {
         });
     });
   });
-}
+};
 
 // Once car load is complete, start carsPhotos load
 // Note: This queuing function gets called after photos have been fetched by the DB
@@ -355,7 +405,7 @@ async.parallelLimit(asyncSeries1, 1, () => {
   async.parallelLimit(asyncSeries2, 3, () => {
     // After all seeding operations are done, create materialized view
     console.log('Seeding complete. Creating materialized view.');
-    execute(`CREATE INDEX carsidindex ON "carsPhotos" ("carId");`)
+    execute('CREATE INDEX carsidindex ON "carsPhotos" ("carId");')
       // Then, create materialized view
       .then(() => execute(`
       CREATE MATERIALIZED VIEW carsbycatstatuslong AS
@@ -372,8 +422,8 @@ async.parallelLimit(asyncSeries1, 1, () => {
             cars.long
       `)
       // Then, create index
-      .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
-      // Finally, log total time
-      .then(() => console.timeEnd('Completed seeding and table setup.'));
+        .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
+        // Finally, log total time
+        .then(() => console.timeEnd('Completed seeding and table setup.')));
   });
 });
