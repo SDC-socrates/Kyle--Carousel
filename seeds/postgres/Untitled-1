@@ -1,0 +1,104 @@
+CREATE TABLE carcitylookup AS SELECT id, city FROM cars;
+
+CREATE OR REPLACE FUNCTION car_basic_by_id(
+carid NUMERIC) 
+RETURNS TABLE (qid integer, qstatus character varying, qcity character varying, qlat double precision, qlong double precision, qmodelid integer)
+AS $$
+DECLARE
+	partition character varying;
+BEGIN
+	partition := (SELECT city FROM carcitylookup WHERE id = carid);
+    RETURN QUERY EXECUTE('SELECT * FROM ' || concat('cars_',partition)::regclass || ' WHERE id = ' || quote_literal(carid));
+end;
+$$ language plpgsql;
+
+CREATE OR REPLACE FUNCTION car_details_by_id(
+carid NUMERIC) 
+RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlat double precision, qlong double precision, qurl character varying, qcategory character varying)
+AS $$
+DECLARE
+	dynamic_sql TEXT;
+	partition character varying;
+BEGIN
+	partition := (SELECT city FROM carcitylookup WHERE id = carid);
+  dynamic_sql := 'SELECT '
+		|| concat('cars_',partition)::regclass
+		|| '.id, makes.name as make, models.name as model, models.year, '
+		|| concat('cars_',partition)::regclass
+		|| '.city, '
+		|| concat('cars_',partition)::regclass
+		|| '.long, '
+		|| concat('cars_',partition)::regclass
+		|| '.lat, photos.url, categories.name as category FROM ' 
+		|| concat('cars_',partition)::regclass 
+		|| ', models, makes, categories, "carsPhotos", photos WHERE '
+		|| concat('cars_',partition)::regclass 
+		|| '.id = '
+		|| carid
+		|| ' AND '
+		|| concat('cars_',partition)::regclass 
+		|| '."modelId"=models.id
+			AND models."makeId"=makes.id
+			AND models."categoryId"=categories.id
+			AND "carsPhotos"."carId"='
+		|| concat('cars_',partition)::regclass 
+		|| '.id AND photos.id="carsPhotos"."photoId"'
+
+	/* You can only see this if you SET client_min_messages = DEBUG */
+	RAISE DEBUG '%', dynamic_sql; 
+	RETURN QUERY EXECUTE dynamic_sql;
+end;
+$$ language plpgsql;
+
+
+select * from car_details_by_id(101);
+
+
+
+
+DYNAMIC SQL
+
+CREATE OR REPLACE FUNCTION car_basic_by_id(
+carid NUMERIC) 
+RETURNS TABLE (qid integer, qstatus character varying, qcity character varying, qlat double precision, qlong double precision, qmodelid integer)
+AS $func$
+DECLARE
+  dynamic_sql TEXT;
+	partition character varying;
+BEGIN
+	partition := (SELECT city FROM carcitylookup WHERE id = carid);
+  dynamic_sql := 'SELECT * FROM ' || concat('cars_',partition)::regclass || ' WHERE id = ' || quote_literal(carid);
+
+    /* You can only see this if client_min_messages = DEBUG */
+    RAISE DEBUG '%', dynamic_sql; 
+    RETURN QUERY EXECUTE dynamic_sql;
+END;
+$func$ language plpgsql;
+
+
+
+SELECT cars_stpaul.id, makes.name as make, models.name as model, models.year, cars_stpaul.long, cars_stpaul.lat
+    FROM cars_stpaul, models, makes, categories
+		WHERE cars_stpaul."modelId"=models.id
+      AND models."makeId"=makes.id
+      AND models."categoryId"=categories.id
+      AND cars_stpaul.long > -93.6
+      AND cars_stpaul.long < -93.4
+      AND cars_stpaul.lat > 44.5
+      AND cars_stpaul.lat < 44.7
+      AND cars_stpaul.status='Active'
+      AND categories.name='crossover'
+      AND models.year>2002
+      AND models.year<2012
+    LIMIT 18;
+
+
+
+SELECT cars_bloomington.id, makes.name as make, models.name as model, models.year, cars_bloomington.city, cars_bloomington.long, cars_bloomington.lat, photos.url, categories.name as category 
+	FROM cars_bloomington, models, makes, categories, "carsPhotos", photos 
+	WHERE cars_bloomington.id = 17558 
+		AND cars_bloomington."modelId"=models.id 
+		AND models."makeId"=makes.id 
+		AND models."categoryId"=categories.id 
+		AND "carsPhotos"."carId"=cars_bloomington.id 
+		AND photos.id="carsPhotos"."photoId";

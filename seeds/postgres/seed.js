@@ -13,7 +13,7 @@ const majorCities = require('../usdmas');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 10;
+const carsPerModel = 17550;
 
 
 // ========================================================
@@ -114,13 +114,13 @@ const attrFromImgKey = (string) => {
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
   for (let i = 1; i <= carsPerModel; i++) {
-    var city = randomCity();
+    const city = randomCity();
     carsToDB.push({
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
       city: city.city.toLowerCase(),
-      lat: (city.latitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
-      long: (city.longitude + (Math.random() * 0.3 - 0.6)).toFixed(4),
+      lat: city.latitude + (Math.random() * 0.3 - 0.6),
+      long: city.longitude + (Math.random() * 0.3 - 0.6),
       modelId,
     });
   }
@@ -284,78 +284,86 @@ asyncSeries1.push((callback) => {
 // CARS AND CARSPHOTOS - SEED DB
 // ========================================================
 
-
 // Create tables in DB
 asyncSeries1.push((callback) => {
-  db.Car.sync({ force: dropExistingTables })
-    .then(() => sequelize.query('CREATE SCHEMA region'))
+  // console.log('CREATING CARS TABLE!!');
+  sequelize.query('CREATE SEQUENCE carsid START 1;')
     .then(() => sequelize.query(`
-      CREATE OR REPLACE FUNCTION
-        public.insert_cars_partition()
-          RETURNS trigger
-          LANGUAGE plpgsql
-        AS $function$
-        BEGIN
-            IF NEW.city IS NOT NULL THEN
-                raise notice 'city: %', NEW.city;
-                EXECUTE 'INSERT INTO ' || concat('region.',NEW.city)::regclass || ' VALUES ($1.*)' USING NEW;
-                RETURN NULL;
-            END IF;
-        END;
-        $function$;
-      `))
-    .then(() => sequelize.query(`
-      CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_cars_partition();
-      `))
+      CREATE TABLE public.cars
+      (
+          id integer NOT NULL DEFAULT nextval('carsid'),
+          status character varying(255) COLLATE pg_catalog."default",
+          city character varying(255) COLLATE pg_catalog."default",
+          lat double precision,
+          "long" double precision,
+          "modelId" integer,
+          CONSTRAINT cars_pkey PRIMARY KEY (city, id),
+          CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
+              REFERENCES public.models (id) MATCH SIMPLE
+              ON UPDATE CASCADE
+              ON DELETE SET NULL
+      )
+      PARTITION BY LIST(city)
+      WITH (
+          OIDS = FALSE
+      )
+      TABLESPACE pg_default;
+  `))
+  .then(() => sequelize.query(`
+    CREATE TABLE cars_global PARTITION OF cars DEFAULT;
+  `))
+  .then(() => db.Car.sync({ force: false }))
+    // .then(() => sequelize.query('CREATE SCHEMA region'))
+    // .then(() => sequelize.query(`
+    //   CREATE OR REPLACE FUNCTION
+    //     public.insert_cars_partition()
+    //       RETURNS trigger
+    //       LANGUAGE plpgsql
+    //     AS $function$
+    //     BEGIN
+    //         IF NEW.city IS NOT NULL THEN
+    //             raise notice 'city: %', NEW.city;
+    //             EXECUTE 'INSERT INTO ' || concat('region.',NEW.city)::regclass || ' VALUES ($1.*)' USING NEW;
+    //             RETURN NULL;
+    //         END IF;
+    //     END;
+    //     $function$;
+    //   `))
+    // .then(() => sequelize.query(`
+    //   CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_cars_partition();
+    //   `))
     .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
-    .then(() => sequelize.query(`
-      CREATE OR REPLACE FUNCTION
-        public.carsphotos_pseudo_fk_constraints()
-          RETURNS trigger
-          LANGUAGE plpgsql
-        AS $function$
-        BEGIN
-            IF NOT EXISTS (SELECT id FROM cars WHERE id = NEW."carId") THEN
-                raise exception 'Pseudo FK error: Inserting carsPhoto for carId not found: %', NEW."carId";
-            END IF;
-            IF NOT EXISTS (SELECT id FROM photos WHERE id = NEW."photoId") THEN
-            raise exception 'Pseudo FK error: Inserting carsPhoto for photoId not found: %', NEW."photoId";
-            END IF;
-            RETURN NEW;
-        END;
-        $function$;
-      `))
-    .then(() => sequelize.query(`
-      CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
-      `))
     .then(() => callback(null, null));
 });
 
 majorCities.forEach((city) => {
   asyncSeries1.push((callback) => {
     const cityName = city.city.toLowerCase();
+    // sequelize.query(`
+    //   CREATE TABLE region.${cityName} (
+    //     id integer DEFAULT nextval('public.cars_id_seq'::regclass),
+    //     status character varying(255) COLLATE pg_catalog."default",
+    //     city character varying(255) COLLATE pg_catalog."default",
+    //     lat double precision,
+    //     "long" double precision,
+    //     "modelId" integer,
+    //     CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
+    //         REFERENCES public.models (id) MATCH SIMPLE
+    //         ON UPDATE CASCADE
+    //         ON DELETE SET NULL
+    //     )
+    //   INHERITS (public.cars);
+    //   `)
+    //   .then(() => sequelize.query(`
+    //     ALTER TABLE ONLY region.${cityName}
+    //       ADD CONSTRAINT ${cityName}_pkey PRIMARY KEY (id);
+    //     `))
+    //   .then(() => sequelize.query(`
+    //     ALTER TABLE region.${cityName} ADD CONSTRAINT ${cityName}_city CHECK (city = '${cityName}');
+    //     `))
     sequelize.query(`
-      CREATE TABLE region.${cityName} (
-        id integer DEFAULT nextval('public.cars_id_seq'::regclass),
-        status character varying(255) COLLATE pg_catalog."default",
-        city character varying(255) COLLATE pg_catalog."default",
-        lat double precision,
-        "long" double precision,
-        "modelId" integer,
-        CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
-            REFERENCES public.models (id) MATCH SIMPLE
-            ON UPDATE CASCADE
-            ON DELETE SET NULL
-        )
-      INHERITS (public.cars);
-      `)
-      .then(() => sequelize.query(`
-        ALTER TABLE ONLY region.${cityName}
-          ADD CONSTRAINT ${cityName}_pkey PRIMARY KEY (id);
-        `))
-      .then(() => sequelize.query(`
-        ALTER TABLE region.${cityName} ADD CONSTRAINT ${cityName}_city CHECK (city = '${cityName}');
-        `))
+    CREATE TABLE cars_${cityName} PARTITION OF cars FOR VALUES IN ('${cityName}');
+    `)
       .then(() => callback(null, null));
   });
 });
@@ -383,6 +391,69 @@ const queueCars = () => {
           callback(null, null);
         });
     });
+  });
+  asyncSeries2.push((callback) => {
+    sequelize.query('CREATE TABLE carcitylookup AS SELECT id, city FROM cars')
+      .then(() => sequelize.query('CREATE INDEX ixcarlookupid ON carcitylookup (id DESC);'))
+      .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION car_basic_by_id(
+        carid NUMERIC) 
+        RETURNS TABLE (qid integer, qstatus character varying, qcity character varying, qlat double precision, qlong double precision, qmodelid integer)
+        AS $func$
+        DECLARE
+          dynamic_sql TEXT;
+          partition character varying;
+        BEGIN
+          EXECUTE 'SELECT city FROM carcitylookup WHERE id = ' || carid
+              INTO partition;
+            dynamic_sql := 'SELECT * FROM ' || concat('cars_',partition)::regclass || ' WHERE id = ' || quote_literal(carid);
+        
+            /* You can only see this if you SET client_min_messages = DEBUG */
+            RAISE DEBUG '%', dynamic_sql; 
+            RETURN QUERY EXECUTE dynamic_sql;
+        END;
+        $func$ language plpgsql;        
+      `))
+      .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION car_details_by_id(
+        carid NUMERIC) 
+        RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlat double precision, qlong double precision, qurl character varying, qcategory character varying)
+        AS $$
+        DECLARE
+          dynamic_sql TEXT;
+          partition character varying;
+        BEGIN
+            EXECUTE 'SELECT city FROM carcitylookup WHERE id = ' || carid
+              INTO partition;
+            dynamic_sql := 'SELECT '
+            || concat('cars_',partition)::regclass
+            || '.id, makes.name as make, models.name as model, models.year, '
+            || concat('cars_',partition)::regclass
+            || '.city, '
+            || concat('cars_',partition)::regclass
+            || '.long, '
+            || concat('cars_',partition)::regclass
+            || '.lat, photos.url, categories.name as category FROM ' 
+            || concat('cars_',partition)::regclass 
+            || ', models, makes, categories, "carsPhotos", photos WHERE '
+            || concat('cars_',partition)::regclass 
+            || '.id = '
+            || carid
+            || ' AND '
+            || concat('cars_',partition)::regclass 
+            || '."modelId"=models.id
+              AND models."makeId"=makes.id
+              AND models."categoryId"=categories.id
+              AND "carsPhotos"."carId"='
+            || concat('cars_',partition)::regclass 
+            || '.id AND photos.id="carsPhotos"."photoId"';
+            
+          RAISE DEBUG '%', dynamic_sql; 
+          RETURN QUERY EXECUTE dynamic_sql;
+        END;
+        $$ language plpgsql;
+      `))
+      .then(() => callback(null, null));
   });
 };
 
@@ -423,27 +494,35 @@ const queueCarPhotos = () => {
 // Initiate async operations
 async.parallelLimit(asyncSeries1, 1, () => {
   async.parallelLimit(asyncSeries2, 3, () => {
-    // After all seeding operations are done, create materialized view
-    console.log('Seeding complete. Creating materialized view.');
-    execute('CREATE INDEX carsidindex ON "carsPhotos" ("carId");')
-      // Then, create materialized view
-      .then(() => execute(`
-      CREATE MATERIALIZED VIEW carsbycatstatuslong AS
-        SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
-          FROM cars, models, makes, categories, "carsPhotos", photos 
-          WHERE cars."modelId"=models.id 
-            AND models."makeId"=makes.id 
-            AND models."categoryId"=categories.id 
-            AND "carsPhotos"."carId"=cars.id 
-            AND photos.id="carsPhotos"."photoId"
-          ORDER BY
-            categories.name,
-            cars.status,
-            cars.long
+    sequelize.query(`
+    CREATE OR REPLACE FUNCTION
+    public.carsphotos_pseudo_fk_constraints()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $function$
+      DECLARE
+        carid numeric;
+        photoid numeric;
+      BEGIN
+        EXECUTE 'SELECT id FROM carcitylookup WHERE id = ' || NEW."carId"
+          INTO carid;
+        IF carid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for carId not found: %', NEW."carId";
+        END IF;
+        EXECUTE 'SELECT id FROM photos WHERE id = ' || NEW."photoId"
+          INTO photoid;
+        IF photoid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for photoId not found: %', NEW."photoId";
+        END IF;
+        RETURN NEW;
+      END;
+    $function$;
       `)
-      // Then, create index
-        .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
-        // Finally, log total time
-        .then(() => console.timeEnd('Completed seeding and table setup.')));
+      .then(() => sequelize.query(`
+        CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
+        `))
+      .then(() => sequelize.query('CREATE INDEX ixphotocarid ON "carsPhotos" ("carId" DESC);'))
+      // Finally, log total time
+      .then(() => console.timeEnd('Completed seeding and table setup.'));
   });
 });
