@@ -8,3 +8,4 @@ imageSeeder/upload
 bundle.js
 *.log
 *.temp
+newrelic.js
