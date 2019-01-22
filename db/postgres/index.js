@@ -43,7 +43,8 @@ const postSpecificCar = (requestedId, carProps, callback) => {
   //   "status":"Active",
   //   "make":"Bugatti",
   //   "model":"SP-0",
-  //   "year": 2012
+  //   "year": 2012,
+  //   "city": "sanjose"
   //   "long":77.39,
   //   "lat":56.18,
   //   "images":["https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/0.jpeg","https://turash-assets.s3.us-west-2.amazonaws.com/sports/Bugatti/0/1.jpeg"]
@@ -66,6 +67,7 @@ const postSpecificCar = (requestedId, carProps, callback) => {
     .then(modelId => db.Car.create({
       id: carProps.id,
       status: carProps.status,
+      city: carProps.city,
       lat: carProps.lat,
       long: carProps.long,
       modelId,

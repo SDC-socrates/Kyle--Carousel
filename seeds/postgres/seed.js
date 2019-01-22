@@ -313,25 +313,6 @@ asyncSeries1.push((callback) => {
     CREATE TABLE cars_global PARTITION OF cars DEFAULT;
   `))
   .then(() => db.Car.sync({ force: false }))
-    // .then(() => sequelize.query('CREATE SCHEMA region'))
-    // .then(() => sequelize.query(`
-    //   CREATE OR REPLACE FUNCTION
-    //     public.insert_cars_partition()
-    //       RETURNS trigger
-    //       LANGUAGE plpgsql
-    //     AS $function$
-    //     BEGIN
-    //         IF NEW.city IS NOT NULL THEN
-    //             raise notice 'city: %', NEW.city;
-    //             EXECUTE 'INSERT INTO ' || concat('region.',NEW.city)::regclass || ' VALUES ($1.*)' USING NEW;
-    //             RETURN NULL;
-    //         END IF;
-    //     END;
-    //     $function$;
-    //   `))
-    // .then(() => sequelize.query(`
-    //   CREATE TRIGGER insert_trigger BEFORE INSERT ON cars FOR EACH ROW EXECUTE PROCEDURE insert_cars_partition();
-    //   `))
     .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
     .then(() => callback(null, null));
 });
@@ -339,28 +320,6 @@ asyncSeries1.push((callback) => {
 majorCities.forEach((city) => {
   asyncSeries1.push((callback) => {
     const cityName = city.city.toLowerCase();
-    // sequelize.query(`
-    //   CREATE TABLE region.${cityName} (
-    //     id integer DEFAULT nextval('public.cars_id_seq'::regclass),
-    //     status character varying(255) COLLATE pg_catalog."default",
-    //     city character varying(255) COLLATE pg_catalog."default",
-    //     lat double precision,
-    //     "long" double precision,
-    //     "modelId" integer,
-    //     CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
-    //         REFERENCES public.models (id) MATCH SIMPLE
-    //         ON UPDATE CASCADE
-    //         ON DELETE SET NULL
-    //     )
-    //   INHERITS (public.cars);
-    //   `)
-    //   .then(() => sequelize.query(`
-    //     ALTER TABLE ONLY region.${cityName}
-    //       ADD CONSTRAINT ${cityName}_pkey PRIMARY KEY (id);
-    //     `))
-    //   .then(() => sequelize.query(`
-    //     ALTER TABLE region.${cityName} ADD CONSTRAINT ${cityName}_city CHECK (city = '${cityName}');
-    //     `))
     sequelize.query(`
     CREATE TABLE cars_${cityName} PARTITION OF cars FOR VALUES IN ('${cityName}');
     `)
@@ -395,25 +354,6 @@ const queueCars = () => {
   asyncSeries2.push((callback) => {
     sequelize.query('CREATE TABLE carcitylookup AS SELECT id, city FROM cars')
       .then(() => sequelize.query('CREATE INDEX ixcarlookupid ON carcitylookup (id DESC);'))
-      .then(() => sequelize.query(`
-      CREATE OR REPLACE FUNCTION car_basic_by_id(
-        carid NUMERIC) 
-        RETURNS TABLE (qid integer, qstatus character varying, qcity character varying, qlat double precision, qlong double precision, qmodelid integer)
-        AS $func$
-        DECLARE
-          dynamic_sql TEXT;
-          partition character varying;
-        BEGIN
-          EXECUTE 'SELECT city FROM carcitylookup WHERE id = ' || carid
-              INTO partition;
-            dynamic_sql := 'SELECT * FROM ' || concat('cars_',partition)::regclass || ' WHERE id = ' || quote_literal(carid);
-        
-            /* You can only see this if you SET client_min_messages = DEBUG */
-            RAISE DEBUG '%', dynamic_sql; 
-            RETURN QUERY EXECUTE dynamic_sql;
-        END;
-        $func$ language plpgsql;        
-      `))
       .then(() => sequelize.query(`
       CREATE OR REPLACE FUNCTION car_details_by_id(
         carid NUMERIC) 
