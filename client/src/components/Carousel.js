@@ -1,6 +1,7 @@
 import React from 'react';
 import NavBar from './NavBar';
 import SliderComponent from './SliderComponent';
+import apiRootUrl from '../config';
 
 class Carousel extends React.Component {
   constructor(props) {
@@ -29,7 +30,7 @@ class Carousel extends React.Component {
   }
 
   getCarById(id) {
-    return fetch(`http://localhost:3004/api/cars/${id}`)
+    return fetch(`${apiRootUrl}/api/cars/${id}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching car by id')))
       .then(res => {
         var body = res.json();
