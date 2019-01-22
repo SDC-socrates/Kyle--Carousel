@@ -1,12 +1,10 @@
 /* eslint-disable no-console */
 require('newrelic');
-const mongodb = require('mongodb');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const url = require('url');
 const cluster = require('cluster');
-const http = require('http');
 const numCPUs = require('os').cpus().length;
 const controllers = require('./controllers');
 const app = express();
