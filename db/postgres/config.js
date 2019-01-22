@@ -10,8 +10,8 @@ const logToSequelizeLog = (executedQuery, executionTime) => {
   fs.writeFileSync('./queryTimes.csv', sequelizeLog);
 };
 
-const sequelize = new Sequelize(env.dbName || process.env.DBNAME, env.dbUser || process.env.DBUSER, env.dbPass || process.env.DBPASS, {
-  host: 'localhost',
+const sequelize = new Sequelize(env.dbName, env.dbUser, env.dbPass, {
+  host: env.dbHost,
   dialect: 'postgres',
   operatorsAliases: false,
   pool: {
