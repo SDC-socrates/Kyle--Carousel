@@ -47,7 +47,6 @@ const sendErrOrResults = (res, err, results) => {
     console.log(err);
     res.status(400).send(JSON.stringify(err));
   } else {
-    console.log('SENDING RESPONSE', results);
     res.send(JSON.stringify(results));
   }
 };
