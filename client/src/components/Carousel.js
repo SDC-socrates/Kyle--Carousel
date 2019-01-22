@@ -11,7 +11,7 @@ class Carousel extends React.Component {
 
   componentDidMount() {
     let targetID = window.location.pathname.slice(1, window.location.pathname.length - 1);
-    targetID ? (this.state.id = targetID) : (this.state.id = 15);
+    targetID ? (this.state.id = targetID) : (this.state.id = Math.round(Math.random() * 9999999));
 
     this.getCarById(this.state.id).then(res => {
       this.setState({
