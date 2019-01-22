@@ -3,10 +3,10 @@ const fs = require('fs');
 
 let sequelizeLog = '';
 const logToSequelizeLog = (executedQuery, executionTime) => {
-  // console.log(executedQuery);
-  // console.log(`DB execution time: ${executionTime}ms.`);
-  // sequelizeLog += `${executionTime}\n`;
-  // fs.writeFileSync('./queryTimes.csv', sequelizeLog);
+  console.log(executedQuery);
+  console.log(`DB execution time: ${executionTime}ms.`);
+  sequelizeLog += `${executionTime}\n`;
+  fs.writeFileSync('./queryTimes.csv', sequelizeLog);
 };
 
 const sequelize = new Sequelize('turashc', 'postgres', '6042783128', {

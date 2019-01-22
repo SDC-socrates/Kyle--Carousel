@@ -8,16 +8,18 @@ const getSpecificCar = (carId, callback) => {
     // console.timeEnd('DB request to response');
     // console.time('Transform response to client shape');
     // Transform data to client expected shape
+    console.log('DB Results: ', results);
     const output = {
-      id: results[0].id,
-      make: `${results[0].make} ${results[0].model} ${results[0].year}`,
-      long: results[0].long,
-      lat: results[0].lat,
-      category: results[0].category,
-      year: results[0].year,
+      id: results[0].qid,
+      make: `${results[0].qmake} ${results[0].qmodel} ${results[0].qyear}`,
+      city: results[0].qcity,
+      long: results[0].qlong,
+      lat: results[0].qlat,
+      category: results[0].qcategory,
+      year: results[0].qyear,
       images: [],
     };
-    results.forEach(item => output.images.push([`${item.make} ${item.model} ${item.year}`, imageRootURL + item.url]));
+    results.forEach(item => output.images.push([`${item.qmake} ${item.qmodel} ${item.qyear}`, imageRootURL + item.qurl]));
     // console.timeEnd('Transform response to client shape');
     // console.time('Pass client data to respond');
     callback(err, output);

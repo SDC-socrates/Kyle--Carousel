@@ -14,14 +14,14 @@ const port = process.env.PORT || 3004;
 
 // For debugging purposes
 app.use((req, res, next) => {
-  // console.time('Server request to response');
-  // console.time('Server to controller');
-  // console.log('NEW REQUEST RECEIVED:', req.method, req.path);
+  console.time('Server request to response');
+  console.time('Server to controller');
+  console.log('NEW REQUEST RECEIVED:', req.method, req.path);
   next();
 });
 
-app.use('/', express.static('./client/public/'));
-app.use(/\/\d+\//, express.static('./client/public/'));
+app.use('/', express.static('../client/public/'));
+app.use(/\/\d+\//, express.static('../client/public/'));
 
 app.use(cors());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -49,7 +49,7 @@ const sendErrOrResults = (res, err, results) => {
     console.log(err);
     res.status(400).send(JSON.stringify(err));
   } else {
-    // console.log(results);
+    console.log('SENDING RESPONSE', results);
     res.send(JSON.stringify(results));
   }
 };
@@ -88,7 +88,7 @@ app.delete(/\/api\/cars\/\d+/, (req, res) => {
 });
 
 app.get('/api/cars', (req, res) => {
-  // console.log('Route triggered for getting suggested cars.')
+  console.log('Route triggered for getting suggested cars.')
   const requestedProperties = url.parse(req.url, true).query;
   requestedProperties.long = Number.parseFloat(requestedProperties.long, 10);
   requestedProperties.lat = Number.parseFloat(requestedProperties.lat, 10);

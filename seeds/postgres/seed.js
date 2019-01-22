@@ -417,7 +417,7 @@ const queueCars = () => {
       .then(() => sequelize.query(`
       CREATE OR REPLACE FUNCTION car_details_by_id(
         carid NUMERIC) 
-        RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlat double precision, qlong double precision, qurl character varying, qcategory character varying)
+        RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlong double precision, qlat double precision, qurl character varying, qcategory character varying)
         AS $$
         DECLARE
           dynamic_sql TEXT;
