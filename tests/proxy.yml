@@ -1,8 +1,8 @@
 config:
   target: 'http://localhost:3005'
   phases:
-    - duration: 3
-      arrivalRate: 300
+    - duration: 120
+      arrivalRate: 500
       name: "Primary test phase"
   processor: "./artilleryHelper.js"
 scenarios:
