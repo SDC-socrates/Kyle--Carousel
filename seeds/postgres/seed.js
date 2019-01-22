@@ -462,6 +462,32 @@ async.parallelLimit(asyncSeries1, 1, () => {
         CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
         `))
       .then(() => sequelize.query('CREATE INDEX ixphotocarid ON "carsPhotos" ("carId" DESC);'))
+      .then(() => sequelize.query(`
+        CREATE OR REPLACE FUNCTION sync_cars_carcitylookup_func() RETURNS TRIGGER AS $sync_cars_carcitylookup$
+        BEGIN
+            --
+            -- Create a row in emp_audit to reflect the operation performed on emp,
+            -- make use of the special variable TG_OP to work out the operation.
+            --
+            IF (TG_OP = 'DELETE') THEN
+                DELETE FROM carcitylookup
+          WHERE id = OLD.id;
+            ELSIF (TG_OP = 'UPDATE') THEN
+                UPDATE carcitylookup
+          SET city = NEW.city
+          WHERE carcitylookup.id = NEW.id;
+            ELSIF (TG_OP = 'INSERT') THEN
+                INSERT INTO carcitylookup VALUES (NEW.id, NEW.city);
+            END IF;
+            RETURN NULL; -- result is ignored since this is an AFTER trigger
+        END;
+        $sync_cars_carcitylookup$ LANGUAGE plpgsql;
+      `))
+      .then(() => sequelize.query(`
+        CREATE TRIGGER sync_cars_carcitylookup
+        AFTER INSERT OR UPDATE OR DELETE ON cars
+            FOR EACH ROW EXECUTE PROCEDURE sync_cars_carcitylookup_func();
+      `))
       // Finally, log total time
       .then(() => console.timeEnd('Completed seeding and table setup.'));
   });
