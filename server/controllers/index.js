@@ -8,7 +8,7 @@ const getSpecificCar = (carId, callback) => {
     // console.timeEnd('DB request to response');
     // console.time('Transform response to client shape');
     // Transform data to client expected shape
-    console.log('DB Results: ', results);
+    // console.log('DB Results: ', results);
     const output = {
       id: results[0].qid,
       make: `${results[0].qmake} ${results[0].qmodel} ${results[0].qyear}`,
