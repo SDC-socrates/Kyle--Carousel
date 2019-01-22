@@ -90,8 +90,8 @@ app.delete(/\/api\/cars\/\d+/, (req, res) => {
 app.get('/api/cars', (req, res) => {
   // console.log('Route triggered for getting suggested cars.')
   const requestedProperties = url.parse(req.url, true).query;
-  requestedProperties.long = Number.parseInt(requestedProperties.long, 10);
-  requestedProperties.lat = Number.parseInt(requestedProperties.lat, 10);
+  requestedProperties.long = Number.parseFloat(requestedProperties.long, 10);
+  requestedProperties.lat = Number.parseFloat(requestedProperties.lat, 10);
   requestedProperties.year = Number.parseInt(requestedProperties.year, 10);
   controllers.getSuggestedCars(requestedProperties, (err, results) => {
     sendErrOrResults(res, err, results);

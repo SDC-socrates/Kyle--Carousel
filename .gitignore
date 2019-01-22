@@ -8,3 +8,4 @@ imageSeeder/upload
 imageSeeder/uploads.json
 bundle.js
 *.log
+*.temp

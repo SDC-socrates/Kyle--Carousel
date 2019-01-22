@@ -13,7 +13,7 @@ const majorCities = require('../usdmas');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 17550;
+const carsPerModel = 17600;
 
 
 // ========================================================
@@ -119,8 +119,8 @@ const loadCarsToDB = (modelId) => {
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
       city: city.city.toLowerCase(),
-      lat: city.latitude + (Math.random() * 0.3 - 0.6),
-      long: city.longitude + (Math.random() * 0.3 - 0.6),
+      lat: city.latitude + (0.3 - Math.random() * 0.6),
+      long: city.longitude + (0.3 - Math.random() * 0.6),
       modelId,
     });
   }

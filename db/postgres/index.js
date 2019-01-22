@@ -29,7 +29,7 @@ const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
   // If no carId is provided, lookup a random car
   if (requestedId === undefined) {
-    lookupId = Math.round(Math.random() * 1000) + 9000000;
+    lookupId = Math.round(Math.random() * 999999) + 9000000;
   }
   // console.timeEnd('Controller to DB request');
   // console.time('DB request to response');
@@ -105,8 +105,8 @@ const getSuggestedCars = (requestedProperties, callback) => {
     const randomCity = majorCities[Math.floor(Math.random() * majorCities.length)];
     lookupProperties = {
       city: randomCity.city.toLowerCase(),
-      long: (randomCity.longitude + (Math.random() * 0.4 - 0.2)),
-      lat: (randomCity.latitude + (Math.random() * 0.4 - 0.2)),
+      long: (randomCity.longitude + (0.2 - Math.random() * 0.4)),
+      lat: (randomCity.latitude + (0.2 - Math.random() * 0.4)),
       year: 2005 + Math.round(Math.random() * 9),
       category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 7)], // omitted van due to seeding error
     };
@@ -132,10 +132,10 @@ const getSuggestedCars = (requestedProperties, callback) => {
 };
 
 // Uncomment to test query and log execution times to file
-async.timesLimit(1000, 1,
-  (iterationIndex, callback) => getSuggestedCars(undefined, callback),
-  () => {
-    console.log('All queries complete.');
-  });
+// async.timesLimit(10, 1,
+//   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
+//   () => {
+//     console.log('All queries complete.');
+//   });
 
 module.exports = { getSpecificCar, postSpecificCar, deleteSpecificCar, getSuggestedCars };

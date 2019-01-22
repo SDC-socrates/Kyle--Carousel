@@ -1,22 +1,12 @@
-# TEST PLAN
-#   1) Warm up phase
-#   2) GET request for a specific car ID
 config:
   target: 'http://localhost:3004/api'
   phases:
-    # - duration: 5
-    #   arrivalRate: 5
-    #   name: "Warm up the application"
-    # - duration: 10
-    #   arrivalRate: 5 
-    #   rampTo: 100
-    #   name: "Ramp up phase"
-    - duration: 3
-      arrivalRate: 100
+    - duration: 120
+      arrivalRate: 300
       name: "Primary test phase"
   processor: "./artilleryHelper.js"
 scenarios:
   - flow:
     - function: "generateRandomData"
     - get:
-        url: "/cars?long={{ longSF }}&lat={{ latSF }}&year={{ year }}&category={{ category }}"
+        url: "/cars?city=albany&long={{ longCity }}&lat={{ latCity }}&year={{ year }}&category={{ category }}"
