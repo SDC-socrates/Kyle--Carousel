@@ -13,7 +13,7 @@ const majorCities = require('../usdmas');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 17600;
+const carsPerModel = 19000;
 
 
 // ========================================================
@@ -87,16 +87,6 @@ const randomStatus = () => {
 const randomCity = () => {
   return majorCities[Math.floor(Math.random() * majorCities.length)];
 }
-
-// // Returns a random latitude value
-// const randomLat = () => {
-//   return (Math.random() * 360 - 180).toFixed(2);
-// };
-
-// // Returns a random longtitude value
-// const randomLong = () => {
-//   return (Math.random() * 170.1 - 85.05).toFixed(2);
-// };
 
 // Returns certain car properties inferred from the image key
 // image string format: 'category/Make/modelNumber/imageNumber.jpg'
