@@ -13,7 +13,7 @@ const majorCities = require('../usdmas');
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 19000;
+const carsPerModel = 22600;
 
 
 // ========================================================
@@ -188,15 +188,20 @@ asyncSeries1.push((callback) => {
 // Create bulk upload compatabile data object
 const modelsToDB = [];
 // Keep a count of Models (to manually insert IDs so we don't have to poll the DB for it)
-let modelCount = 1;
+let modelCount = 0;
+let imageCounter = 0;
 images.forEach((image) => {
   if (image) {
     // For each image, identify attributes from the key
     const { category } = attrFromImgKey(image);
     const { make } = attrFromImgKey(image);
-    const { imageNumber } = attrFromImgKey(image);
+    const { model } = attrFromImgKey(image);
     // Only create a model for the first image of each model
-    if (imageNumber == 0) {
+    if (!db.Model.hash[make + model]) {
+      modelCount += 1;
+      // Store model name to id lookup for offline reference
+      db.Model.hash[make + model] = modelCount;
+      imageCounter += 1;
       // Get the category ID and make ID
       asyncSeries1.push((callback) => {
         getCategoryIdFromName(category)
@@ -209,19 +214,17 @@ images.forEach((image) => {
                 // Create a Model object compatible with sequelize upload
                 const modelToDB = {
                   // Set model year based on counter
-                  id: modelCount,
-                  name: attrFromImgKey(image).model,
+                  id: db.Model.hash[make + model],
+                  name: model,
                   // Set model year based on random year between oldest and latest
                   year: oldestModelYear
                     + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
                   makeId,
                   categoryId,
                 };
+                console.log(modelToDB.id, make, model, modelToDB.year);
                 // Push the model object to array for bulkCreate
                 modelsToDB.push(modelToDB);
-                // Store model name to id lookup for offline reference
-                db.Model.hash[make + modelToDB.name] = modelToDB.id;
-                modelCount += 1;
                 // Using async, kickoff the next operation after this one is done
                 callback(null, null);
               });
