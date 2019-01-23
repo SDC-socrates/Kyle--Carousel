@@ -27,7 +27,7 @@ const getSuggestedCars = (callback) => {
   const randomLong = Math.round(Math.random() * 170.1 - 85.05); // Rotated due to error in seeding script
   const randomLat = Math.round(Math.random() * 360 - 180); // Rotated due to error in seeding script
   const randomYearRangeStart = 2005 + Math.round(Math.random() * 9);
-  const categories = ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle']; // omitted van due to seeding error
+  const categories = ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'];
   const randomCategory = categories[Math.round(Math.random() * 7)];  
   execute(`
   SELECT * 

@@ -110,7 +110,7 @@ const getSuggestedCars = (requestedProperties, callback) => {
       long: (randomCity.longitude + (0.2 - Math.random() * 0.4)),
       lat: (randomCity.latitude + (0.2 - Math.random() * 0.4)),
       year: 2005 + Math.round(Math.random() * 9),
-      category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 7)], // omitted van due to seeding error
+      category: ['suv', 'convertible', 'hatchback', 'pickup', 'crossover', 'sports', 'electric', 'muscle'][Math.round(Math.random() * 7)],
     };
   }
   execute(`

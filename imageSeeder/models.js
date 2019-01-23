@@ -118,17 +118,6 @@ var models = {
     'Subaru Tribeca',
     'Volvo XC60'
   ],
-  van: [
-    'GMC Safari',
-    'Fiat 242',
-    'Ford Galaxy',
-    'Ford Pronto',
-    'Ford Transit',
-    'Lancia Voyager',
-    'Renault Dokker',
-    'SsangYong Istana',
-    'Toyota HiAce'
-  ],
   sports: [
     'Audi TT',
     'Bentley Continental GT',
