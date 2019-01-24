@@ -4,10 +4,10 @@ const env = require('../../.env');
 
 let sequelizeLog = '';
 const logToSequelizeLog = (executedQuery, executionTime) => {
-  console.log(executedQuery);
-  console.log(`DB execution time: ${executionTime}ms.`);
-  sequelizeLog += `${executionTime}\n`;
-  fs.writeFileSync('./queryTimes.csv', sequelizeLog);
+  // console.log(executedQuery);
+  // console.log(`DB execution time: ${executionTime}ms.`);
+  // sequelizeLog += `${executionTime}\n`;
+  // fs.writeFileSync('./queryTimes.csv', sequelizeLog);
 };
 
 const sequelize = new Sequelize(env.dbName, env.dbUser, env.dbPass, {
@@ -29,7 +29,7 @@ sequelize
   .then(() => {
     console.log('Connection has been established successfully.');
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Unable to connect to the database:', err);
   });
 
