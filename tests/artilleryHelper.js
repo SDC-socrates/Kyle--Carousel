@@ -1,5 +1,5 @@
 const generateRandomData = (userContext, events, done) => {
-  userContext.vars.carId = Math.round(Math.random() * 1000) + 9999000;
+  userContext.vars.carId = Math.round(Math.random() * 100000) + 9800000;
   userContext.vars.long = Math.round(Math.random() * 170.1 - 85.05);
   userContext.vars.lat = Math.round(Math.random() * 360 - 180);
   userContext.vars.longCity = -84.0855236101746;

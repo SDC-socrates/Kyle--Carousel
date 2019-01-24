@@ -7,11 +7,15 @@ const majorCities = require('../../seeds/usdmas');
 // HELPER FUNCTIONS
 // ========================================================
 
+let timeDbCallToCb;
+
 const execute = (queryString, callback) => {
 //  console.log('DB queryString: ',queryString);
+  timeDbCallToCb = process.hrtime();
   sequelize.query(queryString)
     .then((result) => {
 //      console.log('DB Result: ', result[0]);
+      console.info(`timeDbCallToCb: ${process.hrtime(timeDbCallToCb)[1]/1000000} ms`);
       callback(null, result[0]);
     })
     .catch((err) => {
@@ -29,7 +33,7 @@ const getSpecificCar = (requestedId, callback) => {
   let lookupId = requestedId;
   // If no carId is provided, lookup a random car
   if (requestedId === undefined) {
-    lookupId = Math.round(Math.random() * 999999) + 9000000;
+    lookupId = Math.round(Math.random() * 4950000) + 5000000;
   }
   // console.timeEnd('Controller to DB request');
   // console.time('DB request to response');
@@ -129,12 +133,12 @@ const getSuggestedCars = (requestedProperties, callback) => {
       AND categories.name='${lookupProperties.category}'
       AND models.year>${lookupProperties.year - 5} 
       AND models.year<${lookupProperties.year + 5}
-    LIMIT 18;
+    LIMIT 8;
   `, callback);
 };
 
 // Uncomment to test query and log execution times to file
-// async.timesLimit(10, 1,
+// async.timesLimit(1000, 1,
 //   (iterationIndex, callback) => getSuggestedCars(undefined, callback),
 //   () => {
 //     console.log('All queries complete.');

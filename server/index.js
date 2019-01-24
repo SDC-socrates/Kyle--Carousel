@@ -1,5 +1,5 @@
 /* eslint-disable no-console */
-require('newrelic');
+const nr = require('newrelic');
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
@@ -10,9 +10,11 @@ const controllers = require('./controllers');
 const app = express();
 const port = process.env.PORT || 3004;
 
+let timeReqStartToResp;
+
 // For debugging purposes
 app.use((req, res, next) => {
-  // console.time('Server request to response');
+  timeReqStartToResp = process.hrtime();
   // console.time('Server to controller');
   // console.log('NEW REQUEST RECEIVED:', req.method, req.path);
   next();
@@ -47,6 +49,7 @@ const sendErrOrResults = (res, err, results) => {
     console.log(err);
     res.status(400).send(JSON.stringify(err));
   } else {
+    console.info(`timeReqStartToResp: ${process.hrtime(timeReqStartToResp)[1]/1000000} ms`);
     res.send(JSON.stringify(results));
   }
 };

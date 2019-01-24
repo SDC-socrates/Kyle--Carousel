@@ -35,7 +35,10 @@ class SliderComponent extends React.Component {
         console.log(body);
         return body;
       })
-      .then(res => this.setState({ similar: res }));
+      .then(res => {
+        console.log(res);
+        this.setState({ similar: res });
+      });
   }
 
   render() {

@@ -71,6 +71,8 @@ const getSuggestedCars = (requestedProperties, callback) => {
       suggestedCars[car.make + car.model + car.year + car.long + car.lat] = {
         id: car.id,
         make: `${car.make} ${car.model} ${car.year}`,
+        long: car.long,
+        lat: car.lat,
         thumb: imageRootURL + car.url
       };
     }
