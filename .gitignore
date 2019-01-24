@@ -9,3 +9,4 @@ bundle.js
 *.log
 *.temp
 newrelic.js
+server/newrelic_agent.log
