@@ -9,7 +9,7 @@ const seedHelpers = require('./seedHelpers.js');
 // SPECIFIC CONFIGS (See seed-helpers for general configs)
 // ========================================================
 
-const loadBatchSize = 17550;
+const loadBatchSize = 19000;
 const totalBatches = Object.keys(seedHelpers.carModels).length;
 
 

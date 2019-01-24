@@ -5,15 +5,16 @@ const getSpecificCar = (carId, callback) => {
   db.getSpecificCar(carId, (err, results) => {
     // Transform data to client expected shape
     const output = {
-      id: results[0].id,
-      make: `${results[0].make} ${results[0].model} ${results[0].year}`,
-      long: results[0].long,
-      lat: results[0].lat,
-      category: results[0].category,
-      year: results[0].year,
+      id: results[0].qid,
+      make: `${results[0].qmake} ${results[0].qmodel} ${results[0].qyear}`,
+      city: results[0].qcity,
+      long: results[0].qlong,
+      lat: results[0].qlat,
+      category: results[0].qcategory,
+      year: results[0].qyear,
       images: [],
     };
-    results.forEach(item => output.images.push([`${item.make} ${item.model} ${item.year}`, imageRootURL + item.url]));
+    results.forEach(item => output.images.push([`${item.qmake} ${item.qmodel} ${item.qyear}`, imageRootURL + item.qurl]));
     callback(err, output);
   });
 };
@@ -63,10 +64,11 @@ const getSuggestedCars = (requestedProperties, callback) => {
       suggestedCars[car.make + car.model + car.year + car.long + car.lat] = {
         id: car.id,
         make: `${car.make} ${car.model} ${car.year}`,
+        long: car.long,
+        lat: car.lat,
         thumb: imageRootURL + car.url
       };
     }
-    console.log('RESULTS', Object.values(suggestedCars));
     callback(err, Object.values(suggestedCars));
   });
 };

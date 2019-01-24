@@ -3,7 +3,8 @@ const async = require('async');
 const fs = require('fs');
 const sequelize = require('../../db/postgres/config');
 const downloadedModels = require('../../imageSeeder/models.js');
-const db = require('./models.js')
+const db = require('./models.js');
+const majorCities = require('../usdmas');
 
 // ========================================================
 // CONFIGURATION
@@ -12,7 +13,7 @@ const db = require('./models.js')
 const dropExistingTables = true;
 const latestModelYear = 2019;
 const oldestModelYear = 2000;
-const carsPerModel = 17550;
+const carsPerModel = 22600;
 
 
 // ========================================================
@@ -31,9 +32,11 @@ const images = JSON.parse(uploads.toString()).map((item) => {
 const asyncSeries1 = [];
 const asyncSeries2 = [];
 
+
 // ========================================================
 // HELPER FUNCTIONS
 // ========================================================
+
 
 // Returns a Promise that resolves to the found category
 const getCategoryIdFromName = (name) => {
@@ -77,18 +80,13 @@ const getCarsFromModelId = (modelId) => {
 const randomStatus = () => {
   if (Math.random() < 0.5) {
     return 'Active';
-  } return 'Retired';
+  } return 'Withheld';
 };
 
-// Returns a random latitude value
-const randomLat = () => {
-  return (Math.random() * 360 - 180).toFixed(2);
-};
-
-// Returns a random longtitude value
-const randomLong = () => {
-  return (Math.random() * 170.1 - 85.05).toFixed(2);
-};
+// Returns a random major US city
+const randomCity = () => {
+  return majorCities[Math.floor(Math.random() * majorCities.length)];
+}
 
 // Returns certain car properties inferred from the image key
 // image string format: 'category/Make/modelNumber/imageNumber.jpg'
@@ -106,11 +104,13 @@ const attrFromImgKey = (string) => {
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
   for (let i = 1; i <= carsPerModel; i++) {
+    const city = randomCity();
     carsToDB.push({
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
-      lat: randomLat(),
-      long: randomLong(),
+      city: city.city.toLowerCase(),
+      lat: city.latitude + (0.3 - Math.random() * 0.6),
+      long: city.longitude + (0.3 - Math.random() * 0.6),
       modelId,
     });
   }
@@ -188,15 +188,20 @@ asyncSeries1.push((callback) => {
 // Create bulk upload compatabile data object
 const modelsToDB = [];
 // Keep a count of Models (to manually insert IDs so we don't have to poll the DB for it)
-let modelCount = 1;
+let modelCount = 0;
+let imageCounter = 0;
 images.forEach((image) => {
   if (image) {
     // For each image, identify attributes from the key
     const { category } = attrFromImgKey(image);
     const { make } = attrFromImgKey(image);
-    const { imageNumber } = attrFromImgKey(image);
+    const { model } = attrFromImgKey(image);
     // Only create a model for the first image of each model
-    if (imageNumber == 0) {
+    if (!db.Model.hash[make + model]) {
+      modelCount += 1;
+      // Store model name to id lookup for offline reference
+      db.Model.hash[make + model] = modelCount;
+      imageCounter += 1;
       // Get the category ID and make ID
       asyncSeries1.push((callback) => {
         getCategoryIdFromName(category)
@@ -209,19 +214,17 @@ images.forEach((image) => {
                 // Create a Model object compatible with sequelize upload
                 const modelToDB = {
                   // Set model year based on counter
-                  id: modelCount,
-                  name: attrFromImgKey(image).model,
+                  id: db.Model.hash[make + model],
+                  name: model,
                   // Set model year based on random year between oldest and latest
                   year: oldestModelYear
                     + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
                   makeId,
                   categoryId,
                 };
+                console.log(modelToDB.id, make, model, modelToDB.year);
                 // Push the model object to array for bulkCreate
                 modelsToDB.push(modelToDB);
-                // Store model name to id lookup for offline reference
-                db.Model.hash[make + modelToDB.name] = modelToDB.id;
-                modelCount += 1;
                 // Using async, kickoff the next operation after this one is done
                 callback(null, null);
               });
@@ -274,12 +277,47 @@ asyncSeries1.push((callback) => {
 // CARS AND CARSPHOTOS - SEED DB
 // ========================================================
 
-
 // Create tables in DB
 asyncSeries1.push((callback) => {
-  db.Car.sync({ force: dropExistingTables })
+  // console.log('CREATING CARS TABLE!!');
+  sequelize.query('CREATE SEQUENCE carsid START 1;')
+    .then(() => sequelize.query(`
+      CREATE TABLE public.cars
+      (
+          id integer NOT NULL DEFAULT nextval('carsid'),
+          status character varying(255) COLLATE pg_catalog."default",
+          city character varying(255) COLLATE pg_catalog."default",
+          lat double precision,
+          "long" double precision,
+          "modelId" integer,
+          CONSTRAINT cars_pkey PRIMARY KEY (city, id),
+          CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
+              REFERENCES public.models (id) MATCH SIMPLE
+              ON UPDATE CASCADE
+              ON DELETE SET NULL
+      )
+      PARTITION BY LIST(city)
+      WITH (
+          OIDS = FALSE
+      )
+      TABLESPACE pg_default;
+  `))
+  .then(() => sequelize.query(`
+    CREATE TABLE cars_global PARTITION OF cars DEFAULT;
+  `))
+  .then(() => db.Car.sync({ force: false }))
     .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
     .then(() => callback(null, null));
+});
+
+majorCities.forEach((city) => {
+  asyncSeries1.push((callback) => {
+    const cityName = city.city.toLowerCase();
+    sequelize.query(`
+    CREATE TABLE cars_${cityName} PARTITION OF cars FOR VALUES IN ('${cityName}');
+    `)
+      .then(() => callback(null, null));
+  });
 });
 
 // Once models are loaded, for each model, load a batch of cars into the DB
@@ -306,7 +344,51 @@ const queueCars = () => {
         });
     });
   });
-}
+  asyncSeries2.push((callback) => {
+    sequelize.query('CREATE TABLE carcitylookup AS SELECT id, city FROM cars')
+      .then(() => sequelize.query('CREATE INDEX ixcarlookupid ON carcitylookup (id DESC);'))
+      .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION car_details_by_id(
+        carid NUMERIC) 
+        RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlong double precision, qlat double precision, qurl character varying, qcategory character varying)
+        AS $$
+        DECLARE
+          dynamic_sql TEXT;
+          partition character varying;
+        BEGIN
+            EXECUTE 'SELECT city FROM carcitylookup WHERE id = ' || carid
+              INTO partition;
+            dynamic_sql := 'SELECT '
+            || concat('cars_',partition)::regclass
+            || '.id, makes.name as make, models.name as model, models.year, '
+            || concat('cars_',partition)::regclass
+            || '.city, '
+            || concat('cars_',partition)::regclass
+            || '.long, '
+            || concat('cars_',partition)::regclass
+            || '.lat, photos.url, categories.name as category FROM ' 
+            || concat('cars_',partition)::regclass 
+            || ', models, makes, categories, "carsPhotos", photos WHERE '
+            || concat('cars_',partition)::regclass 
+            || '.id = '
+            || carid
+            || ' AND '
+            || concat('cars_',partition)::regclass 
+            || '."modelId"=models.id
+              AND models."makeId"=makes.id
+              AND models."categoryId"=categories.id
+              AND "carsPhotos"."carId"='
+            || concat('cars_',partition)::regclass 
+            || '.id AND photos.id="carsPhotos"."photoId"';
+            
+          RAISE DEBUG '%', dynamic_sql; 
+          RETURN QUERY EXECUTE dynamic_sql;
+        END;
+        $$ language plpgsql;
+      `))
+      .then(() => callback(null, null));
+  });
+};
 
 // Once car load is complete, start carsPhotos load
 // Note: This queuing function gets called after photos have been fetched by the DB
@@ -345,26 +427,60 @@ const queueCarPhotos = () => {
 // Initiate async operations
 async.parallelLimit(asyncSeries1, 1, () => {
   async.parallelLimit(asyncSeries2, 3, () => {
-    // After all seeding operations are done, create materialized view
-    console.log('Seeding complete. Creating materialized view.');
-    execute(`CREATE INDEX carsidindex ON "carsPhotos" ("carId");`)
-      // Then, create materialized view
-      .then(() => execute(`
-      CREATE MATERIALIZED VIEW carsbycatstatuslong AS
-        SELECT cars.id as id, categories.name as category, cars.status, cars.long, cars.lat, makes.name as make, models.name as model, models.year, photos.url 
-          FROM cars, models, makes, categories, "carsPhotos", photos 
-          WHERE cars."modelId"=models.id 
-            AND models."makeId"=makes.id 
-            AND models."categoryId"=categories.id 
-            AND "carsPhotos"."carId"=cars.id 
-            AND photos.id="carsPhotos"."photoId"
-          ORDER BY
-            categories.name,
-            cars.status,
-            cars.long
+    sequelize.query(`
+    CREATE OR REPLACE FUNCTION
+    public.carsphotos_pseudo_fk_constraints()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $function$
+      DECLARE
+        carid numeric;
+        photoid numeric;
+      BEGIN
+        EXECUTE 'SELECT id FROM carcitylookup WHERE id = ' || NEW."carId"
+          INTO carid;
+        IF carid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for carId not found: %', NEW."carId";
+        END IF;
+        EXECUTE 'SELECT id FROM photos WHERE id = ' || NEW."photoId"
+          INTO photoid;
+        IF photoid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for photoId not found: %', NEW."photoId";
+        END IF;
+        RETURN NEW;
+      END;
+    $function$;
       `)
-      // Then, create index
-      .then(() => execute('CREATE INDEX catstatuslong ON carsbycatstatuslong (category, status, long);'))
+      .then(() => sequelize.query(`
+        CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
+        `))
+      .then(() => sequelize.query('CREATE INDEX ixphotocarid ON "carsPhotos" ("carId" DESC);'))
+      .then(() => sequelize.query(`
+        CREATE OR REPLACE FUNCTION sync_cars_carcitylookup_func() RETURNS TRIGGER AS $sync_cars_carcitylookup$
+        BEGIN
+            --
+            -- Create a row in emp_audit to reflect the operation performed on emp,
+            -- make use of the special variable TG_OP to work out the operation.
+            --
+            IF (TG_OP = 'DELETE') THEN
+                DELETE FROM carcitylookup
+          WHERE id = OLD.id;
+            ELSIF (TG_OP = 'UPDATE') THEN
+                UPDATE carcitylookup
+          SET city = NEW.city
+          WHERE carcitylookup.id = NEW.id;
+            ELSIF (TG_OP = 'INSERT') THEN
+                INSERT INTO carcitylookup VALUES (NEW.id, NEW.city);
+            END IF;
+            RETURN NULL; -- result is ignored since this is an AFTER trigger
+        END;
+        $sync_cars_carcitylookup$ LANGUAGE plpgsql;
+      `))
+      .then(() => sequelize.query(`
+        CREATE TRIGGER sync_cars_carcitylookup
+        AFTER INSERT OR UPDATE OR DELETE ON cars
+            FOR EACH ROW EXECUTE PROCEDURE sync_cars_carcitylookup_func();
+      `))
       // Finally, log total time
       .then(() => console.timeEnd('Completed seeding and table setup.'));
   });

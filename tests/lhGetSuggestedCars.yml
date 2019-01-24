@@ -1,0 +1,12 @@
+config:
+  target: 'http://localhost:3004/api'
+  phases:
+    - duration: 120
+      arrivalRate: 300
+      name: "Primary test phase"
+  processor: "./artilleryHelper.js"
+scenarios:
+  - flow:
+    - function: "generateRandomData"
+    - get:
+        url: "/cars?city=albany&long={{ longCity }}&lat={{ latCity }}&year={{ year }}&category={{ category }}"

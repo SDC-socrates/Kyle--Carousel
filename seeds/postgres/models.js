@@ -85,6 +85,9 @@ const Car = sequelize.define('car', {
   status: {
     type: Sequelize.STRING,
   },
+  city: {
+    type: Sequelize.STRING,
+  },
   lat: {
     type: Sequelize.FLOAT,
   },
@@ -107,15 +110,18 @@ const CarsPhoto = sequelize.define('carsPhoto', {
     primaryKey: true,
     autoIncrement: true,
   },
+  carId: Sequelize.INTEGER,
+  photoId: Sequelize.INTEGER,
 }, {
   createdAt: false,
   updatedAt: false,
 });
 
-CarsPhoto.belongsTo(Car);
-CarsPhoto.belongsTo(Photo);
-Car.hasMany(CarsPhoto);
-Photo.hasMany(CarsPhoto);
+// Auto FK constraints cannot be used on partitioned tables
+// CarsPhoto.belongsTo(Car);
+// CarsPhoto.belongsTo(Photo);
+// Car.hasMany(CarsPhoto);
+// Photo.hasMany(CarsPhoto);
 
 
 module.exports = { Category, Make, Model, Photo, Car, CarsPhoto };

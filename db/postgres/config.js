@@ -1,17 +1,17 @@
 const Sequelize = require('sequelize');
-const queries = require('./index');
 const fs = require('fs');
+const env = require('../../.env');
 
 let sequelizeLog = '';
 const logToSequelizeLog = (executedQuery, executionTime) => {
-  console.log(executedQuery);
-  console.log(`Executed in: ${executionTime}ms.`);
-  sequelizeLog += `${executionTime}\n`;
-  fs.writeFileSync('./queryTimes.csv', sequelizeLog);
+  // console.log(executedQuery);
+  // console.log(`DB execution time: ${executionTime}ms.`);
+  // sequelizeLog += `${executionTime}\n`;
+  // fs.writeFileSync('./queryTimes.csv', sequelizeLog);
 };
 
-const sequelize = new Sequelize('turashc', 'postgres', '6042783128', {
-  host: 'localhost',
+const sequelize = new Sequelize(env.dbName, env.dbUser, env.dbPass, {
+  host: env.dbHost,
   dialect: 'postgres',
   operatorsAliases: false,
   pool: {
@@ -29,7 +29,7 @@ sequelize
   .then(() => {
     console.log('Connection has been established successfully.');
   })
-  .catch(err => {
+  .catch((err) => {
     console.error('Unable to connect to the database:', err);
   });
 

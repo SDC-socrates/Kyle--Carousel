@@ -1,5 +1,6 @@
 import React from 'react';
 import Slider from 'react-slick';
+import apiRootUrl from '../config';
 
 class SliderComponent extends React.Component {
   constructor(props) {
@@ -15,8 +16,8 @@ class SliderComponent extends React.Component {
   }
 
   componentDidMount() {
-    // console.log(this.props.make);
     const search = {
+      city: this.props.city,
       long: this.props.long,
       lat: this.props.lat,
       year: this.props.year,
@@ -26,21 +27,20 @@ class SliderComponent extends React.Component {
   }
 
   //get similar cars for second carousel
-  getSuggestedCars({long, lat, year, category}) {
-    console.log(long, lat, year, category);
-    return fetch(`http://localhost:3004/api/cars?long=${long}&lat=${lat}&year=${year}&category=${category}`)
+  getSuggestedCars({city, long, lat, year, category}) {
+    return fetch(`${apiRootUrl}/api/cars?city=${city}&long=${long}&lat=${lat}&year=${year}&category=${category}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        console.log(res);
         var body = res.json();
-        // console.log('/api/cars/similar POST RES', body);
+        console.log(body);
         return body;
       })
-      .then(res => this.setState({ similar: res }));
+      .then(res => {
+        this.setState({ similar: res });
+      });
   }
 
   render() {
-    // console.log('SIMILAR', this.state.similar);
     const settings = {
       dots: false,
       infinite: true,
