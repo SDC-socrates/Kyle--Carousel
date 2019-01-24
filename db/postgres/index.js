@@ -10,11 +10,9 @@ const majorCities = require('../../seeds/usdmas');
 let timeDbCallToCb;
 
 const execute = (queryString, callback) => {
-//  console.log('DB queryString: ',queryString);
   timeDbCallToCb = process.hrtime();
   sequelize.query(queryString)
     .then((result) => {
-//      console.log('DB Result: ', result[0]);
       console.info(`timeDbCallToCb: ${process.hrtime(timeDbCallToCb)[1]/1000000} ms`);
       callback(null, result[0]);
     })
@@ -35,8 +33,6 @@ const getSpecificCar = (requestedId, callback) => {
   if (requestedId === undefined) {
     lookupId = Math.round(Math.random() * 4950000) + 5000000;
   }
-  // console.timeEnd('Controller to DB request');
-  // console.time('DB request to response');
   execute(`SELECT * from car_details_by_id(${lookupId})`, callback);
 };
 
@@ -133,7 +129,7 @@ const getSuggestedCars = (requestedProperties, callback) => {
       AND categories.name='${lookupProperties.category}'
       AND models.year>${lookupProperties.year - 5} 
       AND models.year<${lookupProperties.year + 5}
-    LIMIT 8;
+    LIMIT 12;
   `, callback);
 };
 
