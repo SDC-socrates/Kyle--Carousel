@@ -1,5 +1,6 @@
 import React from 'react';
 import Slider from 'react-slick';
+import apiRootUrl from '../config';
 
 class SliderComponent extends React.Component {
   constructor(props) {
@@ -9,37 +10,37 @@ class SliderComponent extends React.Component {
       images: this.props.images,
       activeSlide: 0,
       activeSlide2: 0,
-      random: this.props.random
+      random: this.props.images
     };
-    this.getSimilarCarsByMake = this.getSimilarCarsByMake.bind(this);
+    this.getSuggestedCars = this.getSuggestedCars.bind(this);
   }
 
   componentDidMount() {
-    // console.log(this.props.make);
-    this.getSimilarCarsByMake(this.props.make, 7);
+    const search = {
+      city: this.props.city,
+      long: this.props.long,
+      lat: this.props.lat,
+      year: this.props.year,
+      category: this.props.category
+    }
+    this.getSuggestedCars(search);
   }
 
-  //get similar cars for second  carousel
-  getSimilarCarsByMake(type, limit) {
-    return fetch(`http://localhost:3004/api/turash/images/similar`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ make: type, limit: limit })
-    })
+  //get similar cars for second carousel
+  getSuggestedCars({city, long, lat, year, category}) {
+    return fetch(`${apiRootUrl}/api/cars?city=${city}&long=${long}&lat=${lat}&year=${year}&category=${category}`)
       .then(res => (res.ok ? res : new Error('ERROR fetching similar cars by make')))
       .then(res => {
-        console.log('/api/turash/images/similar POST REQ', JSON.stringify({ make: type, limit: limit }));
         var body = res.json();
-        console.log('/api/turash/images/similar POST RES', body);
+        console.log(body);
         return body;
       })
-      .then(res => this.setState({ similar: res }));
+      .then(res => {
+        this.setState({ similar: res });
+      });
   }
 
   render() {
-    // console.log('SIMILAR', this.state.similar);
     const settings = {
       dots: false,
       infinite: true,
@@ -67,10 +68,10 @@ class SliderComponent extends React.Component {
             {this.state.images
               ? this.state.images.map(
                   (image, i) =>
-                    image.url && (
+                    image[1] && (
                       <div key={i}>
                         {' '}
-                        <img src={image.url} />{' '}
+                        <img src={image[1]} />{' '}
                       </div>
                     )
                 )
@@ -87,7 +88,7 @@ class SliderComponent extends React.Component {
                 <div className="similarSlide" key={i}>
                   <a
                     href={`${window.location.pathname.split('/')[0]}/${
-                      similarCar.thumb.split('/')[4]
+                      similarCar.id
                     }/`}
                   >
                     <img src={similarCar.thumb} />
@@ -96,23 +97,6 @@ class SliderComponent extends React.Component {
                         <h2>
                           {similarCar.make.charAt(0).toUpperCase() + similarCar.make.substr(1)}
                         </h2>
-                      </div>
-                    </span>
-                  </a>
-                </div>
-              ))}
-            {this.state.random &&
-              this.state.random.map((randomCar, i) => (
-                <div className="similarSlide" key={i}>
-                  <a
-                    href={`${window.location.pathname.split('/')[0]}/${
-                      randomCar[1].split('/')[4]
-                    }/`}
-                  >
-                    <img src={randomCar[1]} />
-                    <span className="carDescription">
-                      <div>
-                        <h2>{randomCar[0].charAt(0).toUpperCase() + randomCar[0].substr(1)}</h2>
                       </div>
                     </span>
                   </a>

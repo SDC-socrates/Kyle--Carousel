@@ -5,5 +5,10 @@ node_modules
 imageSeeder/node_modules
 imageSeeder/testUpload
 imageSeeder/upload
-imageSeeder/uploads.json
 bundle.js
+*.log
+*.temp
+newrelic.js
+newrelic_agent.log
+server/newrelic_agent.log
+client/public/bundle.js

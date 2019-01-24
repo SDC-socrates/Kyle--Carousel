@@ -1,8 +1,27 @@
 const Sequelize = require('sequelize');
-const sequelize = require('./config');
-const downloadedModels = require('../../imageSeeder/models.js');
+const async = require('async');
 const fs = require('fs');
-const fsPromises = fs.promises;
+const sequelize = require('../../db/postgres/config');
+const downloadedModels = require('../../imageSeeder/models.js');
+const db = require('./models.js');
+const majorCities = require('../usdmas');
+
+// ========================================================
+// CONFIGURATION
+// ========================================================
+
+const dropExistingTables = true;
+const latestModelYear = 2019;
+const oldestModelYear = 2000;
+const carsPerModel = 22600;
+
+
+// ========================================================
+// GENERAL SETUP
+// ========================================================
+
+// Track total time for console logging
+console.time('Completed seeding and table setup.');
 
 // Get the list of images uploaded to s3
 const uploads = fs.readFileSync('../../imageSeeder/uploads.json');
@@ -10,56 +29,25 @@ const images = JSON.parse(uploads.toString()).map((item) => {
   return item.key;
 });
 
-
-// ========================================================
-// SPECIFIC CONFIGS (See seed-helpers for general configs)
-// ========================================================
-const dropExistingTables = true;
-const latestModelYear = 2019;
-const oldestModelYear = 2000;
-const carLoadInterval = 1500;
-const carsPhotoLoadInterval = 1500;
-const photoRootUrl = 'https://turash-assets.s3.us-west-2.amazonaws.com/';
-const carsPerModel = 17550;
-
-
-// ========================================================
-// PROMISES TO HELP SEQUENCE ASYNC OPERATIONS
-// ========================================================
-const promises = [Promise.resolve(null)];
-const categoryAndMakesLoaded = [];
-const modelGenFinished = [];
-const modelGenStarted = new Promise((resolve, reject) => {
-  modelGenFinished.push({ resolve, reject });
-});
-const modelLoadFinished = [];
-const modelLoadStarted = new Promise((resolve, reject) => {
-  modelLoadFinished.push({ resolve, reject });
-});
-const carLoadFinished = [];
-const carLoadStarted = new Promise((resolve, reject) => {
-  carLoadFinished.push({ resolve, reject });
-});
-const carsPhotosLoadFinished = [];
-const carsPhotosLoadStarted = new Promise((resolve, reject) => {
-  carsPhotosLoadFinished.push({ resolve, reject });
-});
+const asyncSeries1 = [];
+const asyncSeries2 = [];
 
 
 // ========================================================
 // HELPER FUNCTIONS
 // ========================================================
 
+
 // Returns a Promise that resolves to the found category
 const getCategoryIdFromName = (name) => {
-  return Category.findOne({
+  return db.Category.findOne({
     where: { name }
   });
 };
 
 // Returns a Promise that resolves to the found make
 const getMakeIdFromName = (name) => {
-  return Make.findOne({
+  return db.Make.findOne({
     where: { name }
   });
 };
@@ -67,7 +55,7 @@ const getMakeIdFromName = (name) => {
 // Returns a Promise that resolves to the found modelId
 const getModelIdFromName = (name, make) => {
   const promise = new Promise((resolve, reject) => {
-    Model.findAll({
+    db.Model.findAll({
       where: { name },
       include: [Make]
     })
@@ -83,7 +71,7 @@ const getModelIdFromName = (name, make) => {
 
 // Returns a Promise that resolves to the found cars with model, make and category
 const getCarsFromModelId = (modelId) => {
-  return Car.findAll({
+  return db.Car.findAll({
     where: { modelId },
   });
 };
@@ -92,18 +80,13 @@ const getCarsFromModelId = (modelId) => {
 const randomStatus = () => {
   if (Math.random() < 0.5) {
     return 'Active';
-  } return 'Retired';
+  } return 'Withheld';
 };
 
-// Returns a random latitude value
-const randomLat = () => {
-  return (Math.random() * 360 - 180).toFixed(2);
-};
-
-// Returns a random longtitude value
-const randomLong = () => {
-  return (Math.random() * 170.1 - 85.05).toFixed(2);
-};
+// Returns a random major US city
+const randomCity = () => {
+  return majorCities[Math.floor(Math.random() * majorCities.length)];
+}
 
 // Returns certain car properties inferred from the image key
 // image string format: 'category/Make/modelNumber/imageNumber.jpg'
@@ -121,15 +104,17 @@ const attrFromImgKey = (string) => {
 const loadCarsToDB = (modelId) => {
   const carsToDB = [];
   for (let i = 1; i <= carsPerModel; i++) {
+    const city = randomCity();
     carsToDB.push({
       id: ((modelId - 1) * carsPerModel + i),
       status: randomStatus(),
-      lat: randomLat(),
-      long: randomLong(),
+      city: city.city.toLowerCase(),
+      lat: city.latitude + (0.3 - Math.random() * 0.6),
+      long: city.longitude + (0.3 - Math.random() * 0.6),
       modelId,
     });
   }
-  return Car.bulkCreate(carsToDB);
+  return db.Car.bulkCreate(carsToDB);
 };
 
 // Creates a CarsPhoto record for each car given a modelId and photo id
@@ -140,28 +125,17 @@ const attachPhotosToCars = (modelId, photoId) => {
   for (var carId = carIdStart; carId <= carIdEnd; carId++) {
     carPhotosToDB.push({ carId, photoId });
   }
-  return CarsPhoto.bulkCreate(carPhotosToDB);
+  return db.CarsPhoto.bulkCreate(carPhotosToDB);
 };
 
+// Executes raw queries
+const execute = (queryString) => {
+  return sequelize.query(queryString, { type: sequelize.QueryTypes.RAW });
+};
 
 // ========================================================
 // CATEGORIES
 // ========================================================
-
-// Define schema for Categories in DB
-const Category = sequelize.define('category', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
 
 // Identify categories from downloadedModels object
 const categories = Object.keys(downloadedModels);
@@ -172,32 +146,17 @@ categories.forEach((category) => {
   categoriesToDB.push({ name: category });
 });
 
-// Write categories to DB
-categoryAndMakesLoaded.push(
-  Category.sync({ force: dropExistingTables })
-    .then(() => {
-      categoryAndMakesLoaded.push(Category.bulkCreate(categoriesToDB));
-    }),
-);
+// Queue up operations to write categories to DB
+asyncSeries1.push((callback) => {
+  db.Category.sync({ force: dropExistingTables })
+    .then(() => db.Category.bulkCreate(categoriesToDB))
+    // Using async, kickoff the next operation after this one is done
+    .then(() => callback(null, null));
+});
 
 // ========================================================
 // MAKES
 // ========================================================
-
-// Define schema for Makes in DB
-const Make = sequelize.define('make', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
 
 // Identify makes from models
 const makes = new Set();
@@ -213,106 +172,76 @@ makes.forEach((make) => {
   makesToDB.push({ name: make });
 });
 
-// Write makes to DB
-categoryAndMakesLoaded.push(
-  Make.sync({ force: dropExistingTables })
-    .then(() => {
-      categoryAndMakesLoaded.push(Make.bulkCreate(makesToDB));
-    }),
-);
+// Queue up operations to write makes to DB
+asyncSeries1.push((callback) => {
+  db.Make.sync({ force: dropExistingTables })
+    .then(() => db.Make.bulkCreate(makesToDB))
+    // Using async, kickoff the next operation after this one is done
+    .then(() => callback(null, null));
+});
+
 
 // ========================================================
 // MODELS
 // ========================================================
 
-
-// Define schema for Models in DB
-const Model = sequelize.define('model', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  name: {
-    type: Sequelize.STRING,
-  },
-  year: {
-    type: Sequelize.INTEGER,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
+// Create bulk upload compatabile data object
+const modelsToDB = [];
+// Keep a count of Models (to manually insert IDs so we don't have to poll the DB for it)
+let modelCount = 0;
+let imageCounter = 0;
+images.forEach((image) => {
+  if (image) {
+    // For each image, identify attributes from the key
+    const { category } = attrFromImgKey(image);
+    const { make } = attrFromImgKey(image);
+    const { model } = attrFromImgKey(image);
+    // Only create a model for the first image of each model
+    if (!db.Model.hash[make + model]) {
+      modelCount += 1;
+      // Store model name to id lookup for offline reference
+      db.Model.hash[make + model] = modelCount;
+      imageCounter += 1;
+      // Get the category ID and make ID
+      asyncSeries1.push((callback) => {
+        getCategoryIdFromName(category)
+          // Using async, kickoff the next operation after this one is done
+          .then(results => results.dataValues.id)
+          .then((categoryId) => {
+            getMakeIdFromName(make)
+              .then(({ dataValues }) => {
+                const makeId = dataValues.id;
+                // Create a Model object compatible with sequelize upload
+                const modelToDB = {
+                  // Set model year based on counter
+                  id: db.Model.hash[make + model],
+                  name: model,
+                  // Set model year based on random year between oldest and latest
+                  year: oldestModelYear
+                    + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
+                  makeId,
+                  categoryId,
+                };
+                console.log(modelToDB.id, make, model, modelToDB.year);
+                // Push the model object to array for bulkCreate
+                modelsToDB.push(modelToDB);
+                // Using async, kickoff the next operation after this one is done
+                callback(null, null);
+              });
+          });
+      });
+    }
+  }
 });
 
-Model.belongsTo(Make);
-Make.hasMany(Model);
-Model.belongsTo(Category);
-Category.hasMany(Model);
-
-Model.hash = {};
-
-// Create bulk upload compatabile data object and load to DB
-const modelsToDB = [];
-// When categories and models have been loaded
-Promise.all(categoryAndMakesLoaded)
-  .then(() => {
-    // We will manually insert IDs so we don't have to poll the DB for it
-    // Keep a manual count of Models
-    let modelCount = 1;
-    images.forEach((image) => {
-      if (image) {
-        // For each image, identify attributes from the key
-        const { category } = attrFromImgKey(image);
-        const { make } = attrFromImgKey(image);
-        const { imageNumber } = attrFromImgKey(image);
-        // Only create a model for the first image of each model
-        if (imageNumber == 0) {
-          // Get the categoryId and MakeId from the DB
-          // For DB operations, hold promises in an array so we can track when operations are done
-          modelGenFinished.push(
-            getCategoryIdFromName(category)
-              .then(results => results.dataValues.id)
-              .then((categoryId) => {
-                modelGenFinished.push(
-                  getMakeIdFromName(make)
-                    .then(results => results.dataValues.id)
-                    .then((makeId) => {
-                      // Create a Model object compatible with sequelize upload
-                      const modelToDB = {
-                        id: modelCount,
-                        name: attrFromImgKey(image).model,
-                        // Create model year based on random year between oldest and latest
-                        year: oldestModelYear
-                          + Math.round((Math.random() * (latestModelYear - oldestModelYear))),
-                        makeId,
-                        categoryId,
-                      };
-                      // Push the model object to array for bulkCreate
-                      modelsToDB.push(modelToDB);
-                      // Store model name to id lookup for offline reference
-                      Model.hash[make + modelToDB.name] = modelToDB.id;
-                      modelCount++;
-                      // Resolve modelGenStarted now that we've started the load and modelGenFinished contains new promises
-                      modelGenFinished[0].resolve('DONE');
-                    })
-                );
-              })
-          );
-        }
-      }
-    });
-  });
-
-// After models have been generated, write Models to DB
-modelGenStarted.then(() => {
-  Promise.all(modelGenFinished)
-    .then(() => {
-      Model.sync({ force: dropExistingTables })
-        .then(() => {
-          Model.bulkCreate(modelsToDB)
-            .then(modelLoadFinished[0].resolve('DONE'));
-        });
-    });
+// Queue up operations to write models to DB
+asyncSeries1.push((callback) => {
+  db.Model.sync({ force: dropExistingTables })
+    .then(() => db.Model.bulkCreate(modelsToDB))
+    // Queue up operations to write cars to DB
+    .then(() => queueCars())
+    // Using async, kickoff the next operation after this one is done
+    .then(() => callback(null, null));
 });
 
 
@@ -320,155 +249,239 @@ modelGenStarted.then(() => {
 // PHOTOS
 // ========================================================
 
-// Define schema for Photos in DB
-const Photo = sequelize.define('photo', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  url: {
-    type: Sequelize.STRING,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
-
 // Create bulk upload compatible data object
 const photosToDB = [];
 images.forEach((imageKey) => {
   if (imageKey) {
-    photosToDB.push({ url: photoRootUrl + imageKey });
+    photosToDB.push({ url: imageKey });
   }
 });
 
-// Write Photos to DB
-Photo.sync({ force: dropExistingTables })
-  .then(() => {
-    Photo.bulkCreate(photosToDB);
-  });
-
-
-// ========================================================
-// CARS - DEFINE SCHEMA
-// ========================================================
-
-// Define schema for Cars in DB
-const Car = sequelize.define('car', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  status: {
-    type: Sequelize.STRING,
-  },
-  lat: {
-    type: Sequelize.FLOAT,
-  },
-  long: {
-    type: Sequelize.FLOAT,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
+// Queue up operations to write photos to DB
+let photos;
+asyncSeries1.push((callback) => {
+  db.Photo.sync({ force: dropExistingTables })
+    .then(() => db.Photo.bulkCreate(photosToDB))
+    .then(() => db.Photo.findAll({}))
+    .then((photosFromDB) => {
+      // Store list of photos for reference and add carPhotos seeding to queue
+      photos = photosFromDB;
+      queueCarPhotos();
+      // Using async, kickoff the next operation after this one is done
+      callback(null, null);
+    });
 });
-
-Car.belongsTo(Model);
-Model.hasMany(Car);
-
-
-// ========================================================
-// CARSPHOTOS - DEFINE SCHEMA
-// ========================================================
-
-
-// Define schema for carsPhoto in DB
-const CarsPhoto = sequelize.define('carsPhoto', {
-  id: {
-    type: Sequelize.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-}, {
-  createdAt: false,
-  updatedAt: false,
-});
-
-CarsPhoto.belongsTo(Car);
-CarsPhoto.belongsTo(Photo);
-Car.hasMany(CarsPhoto);
-Photo.hasMany(CarsPhoto);
 
 
 // ========================================================
 // CARS AND CARSPHOTOS - SEED DB
 // ========================================================
 
-// Craete counters so we can display progress
-let carsPhotoBatch = 1;
-let carsBatch = 1;
-// Create timers so we can space out DB operations
-let carsPhototimer = 0;
-let carsTimer = 0;
-
-// Once model load is complete, start seeding models
-modelLoadStarted.then(() => {
-  Promise.all(modelLoadFinished)
-    .then(() => Car.sync({ force: dropExistingTables }))
-    .then(() => { 
-    // For each car model, seed cars
-      modelsToDB.forEach((model, index) => {
-        // This conditional allows us to reduce range of seeding for debug puurposes
-        if (index >= 0) {
-          carLoadFinished[0].resolve('Done');
-          // Keep DB operations in an array of promises so we can track when all are complete
-          carLoadFinished.push(new Promise((resolve, reject) => {
-            // Delay each DB operation based on delay config
-            setTimeout(() => {
-              loadCarsToDB(model.id)
-                .then(() => {
-                  console.log(`Load Cars to DB (${carsPerModel}/batch). Batch #:`, carsBatch); 
-                  carsBatch++;
-                  resolve('Done');
-                  return;
-                })
-                .catch((err) => { console.log(err); });
-            }, carsTimer);
-            carsTimer += carLoadInterval;
-          }));
-        }
-      });
-    });
+// Create tables in DB
+asyncSeries1.push((callback) => {
+  // console.log('CREATING CARS TABLE!!');
+  sequelize.query('CREATE SEQUENCE carsid START 1;')
+    .then(() => sequelize.query(`
+      CREATE TABLE public.cars
+      (
+          id integer NOT NULL DEFAULT nextval('carsid'),
+          status character varying(255) COLLATE pg_catalog."default",
+          city character varying(255) COLLATE pg_catalog."default",
+          lat double precision,
+          "long" double precision,
+          "modelId" integer,
+          CONSTRAINT cars_pkey PRIMARY KEY (city, id),
+          CONSTRAINT "cars_modelId_fkey" FOREIGN KEY ("modelId")
+              REFERENCES public.models (id) MATCH SIMPLE
+              ON UPDATE CASCADE
+              ON DELETE SET NULL
+      )
+      PARTITION BY LIST(city)
+      WITH (
+          OIDS = FALSE
+      )
+      TABLESPACE pg_default;
+  `))
+  .then(() => sequelize.query(`
+    CREATE TABLE cars_global PARTITION OF cars DEFAULT;
+  `))
+  .then(() => db.Car.sync({ force: false }))
+    .then(() => db.CarsPhoto.sync({ force: dropExistingTables }))
+    .then(() => callback(null, null));
 });
 
-// Once car load is complete, start carsPhotos load
-carLoadStarted.then(() => {
-  Promise.all(carLoadFinished)
-    .then(() => CarsPhoto.sync({ force: dropExistingTables }))
-    // Get all photos in the DB
-    .then(() => Photo.findAll({}))
-    .then((photos) => {
-      // Loop thru each photo
-      photos.forEach((photo) => {
-        // Extract the key from the photo urls
-        const regex = new RegExp(photoRootUrl, 'g');
-        const key = photo.dataValues.url.replace(regex, '');
-        const modelName = attrFromImgKey(key).model;
-        const { make } = attrFromImgKey(key);
-        // Delay each DB operation based on delay config
-        setTimeout(() => {
-          // seed carPhotos based on car_id (infererd from model id) and photo id
-          attachPhotosToCars(Model.hash[make + modelName], photo.dataValues.id)
-            .then(() => {
-              console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch #:`, carsPhotoBatch);
-              carsPhotoBatch++;
-              return;
-            })
-            .catch((err) => { console.log(err); });
-        }, carsPhototimer);
-        carsPhototimer += carsPhotoLoadInterval;
-      });
+majorCities.forEach((city) => {
+  asyncSeries1.push((callback) => {
+    const cityName = city.city.toLowerCase();
+    sequelize.query(`
+    CREATE TABLE cars_${cityName} PARTITION OF cars FOR VALUES IN ('${cityName}');
+    `)
+      .then(() => callback(null, null));
+  });
+});
+
+// Once models are loaded, for each model, load a batch of cars into the DB
+// Note: This queuing function gets called after models have been inserted into the DB      
+const queueCars = () => {
+  let timestart;
+  modelsToDB.forEach((model, batch) => {
+    asyncSeries2.push((callback) => {
+      // Track time for console logging
+      if (batch === 0) {
+        timeStart = Date.now(); 
+      }
+      console.log(`Loading cars to DB. Batch size ${carsPerModel}. Batch ${batch + 1}/${modelsToDB.length}.`);
+      loadCarsToDB(model.id)
+        .then(() => {
+          // Log key info about the loading operation to the console
+          const timeNow = Date.now();
+          const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
+          const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
+          const estimatedTimeRemaining = ((modelsToDB.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
+          console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
+          // Using async, kickoff the next operation after this one is done
+          callback(null, null);
+        });
     });
+  });
+  asyncSeries2.push((callback) => {
+    sequelize.query('CREATE TABLE carcitylookup AS SELECT id, city FROM cars')
+      .then(() => sequelize.query('CREATE INDEX ixcarlookupid ON carcitylookup (id DESC);'))
+      .then(() => sequelize.query(`
+      CREATE OR REPLACE FUNCTION car_details_by_id(
+        carid NUMERIC) 
+        RETURNS TABLE (qid integer, qmake character varying, qmodel character varying, qyear integer, qcity character varying, qlong double precision, qlat double precision, qurl character varying, qcategory character varying)
+        AS $$
+        DECLARE
+          dynamic_sql TEXT;
+          partition character varying;
+        BEGIN
+            EXECUTE 'SELECT city FROM carcitylookup WHERE id = ' || carid
+              INTO partition;
+            dynamic_sql := 'SELECT '
+            || concat('cars_',partition)::regclass
+            || '.id, makes.name as make, models.name as model, models.year, '
+            || concat('cars_',partition)::regclass
+            || '.city, '
+            || concat('cars_',partition)::regclass
+            || '.long, '
+            || concat('cars_',partition)::regclass
+            || '.lat, photos.url, categories.name as category FROM ' 
+            || concat('cars_',partition)::regclass 
+            || ', models, makes, categories, "carsPhotos", photos WHERE '
+            || concat('cars_',partition)::regclass 
+            || '.id = '
+            || carid
+            || ' AND '
+            || concat('cars_',partition)::regclass 
+            || '."modelId"=models.id
+              AND models."makeId"=makes.id
+              AND models."categoryId"=categories.id
+              AND "carsPhotos"."carId"='
+            || concat('cars_',partition)::regclass 
+            || '.id AND photos.id="carsPhotos"."photoId"';
+            
+          RAISE DEBUG '%', dynamic_sql; 
+          RETURN QUERY EXECUTE dynamic_sql;
+        END;
+        $$ language plpgsql;
+      `))
+      .then(() => callback(null, null));
+  });
+};
+
+// Once car load is complete, start carsPhotos load
+// Note: This queuing function gets called after photos have been fetched by the DB
+const queueCarPhotos = () => {
+  let timestart;
+  // Loop thru each photo
+  photos.forEach((photo, batch) => {
+    // Extract the key from the photo urls
+    const key = photo.dataValues.url;
+    const modelName = attrFromImgKey(key).model;
+    const { make } = attrFromImgKey(key);
+    // For each photo, queue an async operation to create car-to-photo links in the DB
+    asyncSeries2.push((callback) => {
+      // Track time for console logging
+      if (batch === 0) {
+        timeStart = Date.now(); 
+      }
+      console.log(`Load CarsPhotos to DB (${carsPerModel}/batch). Batch ${batch}/${photos.length}`);
+      // console.log(photo, db.Model.hash[make + modelName], photo.dataValues.id);
+      attachPhotosToCars(db.Model.hash[make + modelName], photo.dataValues.id)
+        .then(() => {
+          // Log key info about the seed operation
+          const timeNow = Date.now();
+          const minutesElasped = ((timeNow - timeStart) / 60000).toFixed(2);
+          const averageTimePerBatch = ((timeNow - timeStart) / 1000 / batch).toFixed(2);
+          const estimatedTimeRemaining = ((photos.length - (batch + 1)) * averageTimePerBatch / 60).toFixed(2);
+          console.log(`Data inserted. ${minutesElasped}m elasped. ${averageTimePerBatch}s/batch. ~${estimatedTimeRemaining}m remaining.`);
+          // Using async, kickoff the next operation after this one is done
+          callback(null, null);
+        });
+    });
+  });
+};
+
+
+// Initiate async operations
+async.parallelLimit(asyncSeries1, 1, () => {
+  async.parallelLimit(asyncSeries2, 3, () => {
+    sequelize.query(`
+    CREATE OR REPLACE FUNCTION
+    public.carsphotos_pseudo_fk_constraints()
+      RETURNS trigger
+      LANGUAGE plpgsql
+      AS $function$
+      DECLARE
+        carid numeric;
+        photoid numeric;
+      BEGIN
+        EXECUTE 'SELECT id FROM carcitylookup WHERE id = ' || NEW."carId"
+          INTO carid;
+        IF carid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for carId not found: %', NEW."carId";
+        END IF;
+        EXECUTE 'SELECT id FROM photos WHERE id = ' || NEW."photoId"
+          INTO photoid;
+        IF photoid IS NULL THEN
+          raise exception 'Pseudo FK error: Inserting carsPhoto for photoId not found: %', NEW."photoId";
+        END IF;
+        RETURN NEW;
+      END;
+    $function$;
+      `)
+      .then(() => sequelize.query(`
+        CREATE TRIGGER insert_trigger BEFORE INSERT OR UPDATE ON "carsPhotos" FOR EACH ROW EXECUTE PROCEDURE carsphotos_pseudo_fk_constraints();
+        `))
+      .then(() => sequelize.query('CREATE INDEX ixphotocarid ON "carsPhotos" ("carId" DESC);'))
+      .then(() => sequelize.query(`
+        CREATE OR REPLACE FUNCTION sync_cars_carcitylookup_func() RETURNS TRIGGER AS $sync_cars_carcitylookup$
+        BEGIN
+            --
+            -- Create a row in emp_audit to reflect the operation performed on emp,
+            -- make use of the special variable TG_OP to work out the operation.
+            --
+            IF (TG_OP = 'DELETE') THEN
+                DELETE FROM carcitylookup
+          WHERE id = OLD.id;
+            ELSIF (TG_OP = 'UPDATE') THEN
+                UPDATE carcitylookup
+          SET city = NEW.city
+          WHERE carcitylookup.id = NEW.id;
+            ELSIF (TG_OP = 'INSERT') THEN
+                INSERT INTO carcitylookup VALUES (NEW.id, NEW.city);
+            END IF;
+            RETURN NULL; -- result is ignored since this is an AFTER trigger
+        END;
+        $sync_cars_carcitylookup$ LANGUAGE plpgsql;
+      `))
+      .then(() => sequelize.query(`
+        CREATE TRIGGER sync_cars_carcitylookup
+        AFTER INSERT OR UPDATE OR DELETE ON cars
+            FOR EACH ROW EXECUTE PROCEDURE sync_cars_carcitylookup_func();
+      `))
+      // Finally, log total time
+      .then(() => console.timeEnd('Completed seeding and table setup.'));
+  });
 });
