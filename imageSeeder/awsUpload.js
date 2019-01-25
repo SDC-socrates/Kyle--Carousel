@@ -26,6 +26,7 @@ let s3Uploads = 0;
 
 let promises = [];
 
+// TODO: Refactor to use promises correctly without nesting
 // Set rootDir to the directory where download.js downloaded images
 const rootDir = 'upload';
 // Iterate through rootDir/category/make/model/output/images directory structure
